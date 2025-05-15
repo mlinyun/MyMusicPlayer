@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="72dp"
+    android:background="?attr/selectableItemBackground"
+    android:padding="8dp">
+
+    <!-- 专辑封面 -->
+    <ImageView
+        android:id="@+id/iv_album_art"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:contentDescription="@string/album_art_description"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@drawable/default_album" />
+
+    <!-- 正在播放指示器 -->
+    <ImageView
+        android:id="@+id/iv_now_playing"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:contentDescription="@string/now_playing_indicator_description"
+        android:src="@drawable/ic_now_playing"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_album_art"
+        app:layout_constraintEnd_toEndOf="@+id/iv_album_art"
+        app:layout_constraintStart_toStartOf="@+id/iv_album_art"
+        app:layout_constraintTop_toTopOf="@+id/iv_album_art"
+        app:tint="@color/colorAccent"
+        tools:visibility="visible" />
+
+    <!-- 歌曲标题 -->
+    <TextView
+        android:id="@+id/tv_song_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="8dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/colorText"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/tv_song_artist"
+        app:layout_constraintEnd_toStartOf="@+id/tv_song_duration"
+        app:layout_constraintStart_toEndOf="@+id/iv_album_art"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        tools:text="歌曲名称" />
+
+    <!-- 歌手名称 -->
+    <TextView
+        android:id="@+id/tv_song_artist"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="8dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/tv_song_duration"
+        app:layout_constraintStart_toEndOf="@+id/iv_album_art"
+        app:layout_constraintTop_toBottomOf="@+id/tv_song_title"
+        tools:text="歌手名称" />
+
+    <!-- 歌曲时长 -->
+    <TextView
+        android:id="@+id/tv_song_duration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="04:32" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

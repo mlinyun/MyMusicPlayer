@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">我的音乐播放器</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_player">播放</string>
+    <string name="nav_playlist">播放列表</string>
+
+    <!-- 播放器界面 -->
+    <string name="now_playing">正在播放</string>
+    <string name="play_pause_description">播放/暂停</string>
+    <string name="previous_description">上一首</string>
+    <string name="next_description">下一首</string>
+    <string name="album_art_description">专辑封面</string>
+    <string name="play_mode_description">播放模式</string>
+    <string name="playlist_description">播放列表</string>
+    <string name="back_description">返回</string>
+    <string name="menu_description">菜单</string>
+    <string name="now_playing_indicator_description">正在播放指示器</string>
+
+    <!-- 播放列表界面 -->
+    <string name="playlist_title">播放列表</string>
+    <string name="search_hint">搜索歌曲、艺术家或专辑</string>
+    <string name="sort_by">排序方式：</string>
+    <string name="songs_count">%1$d 首歌曲</string>
+    <string name="no_songs_found">没有找到歌曲</string>
+    <string name="scan_music">扫描音乐</string>
+    <string name="no_songs_description">无歌曲图标</string>
+    <string name="add_music_description">添加音乐</string>
+
+    <!-- 播放模式 -->
+    <string name="mode_sequence">顺序播放</string>
+    <string name="mode_loop">列表循环</string>
+    <string name="mode_shuffle">随机播放</string>
+    <string name="mode_single_loop">单曲循环</string>
+
+    <!-- 排序选项 -->
+    <string name="sort_by_title_asc">按标题 (A-Z)</string>
+    <string name="sort_by_title_desc">按标题 (Z-A)</string>
+    <string name="sort_by_artist_asc">按艺术家 (A-Z)</string>
+    <string name="sort_by_artist_desc">按艺术家 (Z-A)</string>
+    <string name="sort_by_album_asc">按专辑 (A-Z)</string>
+    <string name="sort_by_album_desc">按专辑 (Z-A)</string>
+    <string name="sort_by_duration_asc">按时长 (短到长)</string>
+    <string name="sort_by_duration_desc">按时长 (长到短)</string>
+
+    <!-- 对话框提示 -->
+    <string name="dialog_delete_title">删除歌曲</string>
+    <string name="dialog_delete_message">确定要从播放列表中移除这首歌曲吗？</string>
+    <string name="dialog_button_cancel">取消</string>
+    <string name="dialog_button_delete">删除</string>
+
+    <!-- 权限相关 -->
+    <string name="permission_required">需要权限</string>
+    <string name="storage_permission_message">应用需要存储权限来访问音乐文件</string>
+    <string name="permission_button_grant">授予权限</string>
+    <string name="permission_button_settings">打开设置</string>
+
+    <!-- 通知相关 -->
+    <string name="notification_channel_name">音乐播放通知</string>
+    <string name="notification_channel_description">显示当前播放的音乐信息</string>
+
+    <!-- 错误提示 -->
+    <string name="error_playback">播放出错</string>
+    <string name="error_no_audio_file">无法找到或播放此音频文件</string>
+    <string name="error_no_audio_focus">无法获取音频焦点</string>
+    <!-- 其他提示 -->
+    <string name="scanning_music">正在扫描音乐文件…</string>
+    <string name="scan_completed">扫描完成</string>
+    <string name="found_songs">找到 %1$d 首歌曲</string>
+
+    <!-- 排序选项数组 -->
+    <string-array name="sort_options">
+        <item>@string/sort_by_title_asc</item>
+        <item>@string/sort_by_title_desc</item>
+        <item>@string/sort_by_artist_asc</item>
+        <item>@string/sort_by_artist_desc</item>
+        <item>@string/sort_by_album_asc</item>
+        <item>@string/sort_by_album_desc</item>
+        <item>@string/sort_by_duration_asc</item>
+        <item>@string/sort_by_duration_desc</item>
+    </string-array>
+</resources>

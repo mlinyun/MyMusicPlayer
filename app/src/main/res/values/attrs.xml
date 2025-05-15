@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 歌词视图自定义属性 -->
+    <declare-styleable name="LrcView">
+        <!-- 普通文本大小 -->
+        <attr name="normalTextSize" format="dimension" />
+        <!-- 高亮文本大小 -->
+        <attr name="highlightTextSize" format="dimension" />
+        <!-- 普通文本颜色 -->
+        <attr name="normalTextColor" format="color" />
+        <!-- 高亮文本颜色 -->
+        <attr name="highlightTextColor" format="color" />
+        <!-- 行间距 -->
+        <attr name="lineSpacing" format="dimension" />
+        <!-- 顶部内边距 -->
+        <attr name="lrcPaddingTop" format="dimension" />
+        <!-- 底部内边距 -->
+        <attr name="lrcPaddingBottom" format="dimension" />
+        <!-- 是否允许用户滑动 -->
+        <attr name="enableUserScroll" format="boolean" />
+        <!-- 无歌词时显示的文本 -->
+        <attr name="emptyLrcText" format="string" />
+    </declare-styleable>
+</resources>

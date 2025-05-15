@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#FF4081</color>
+    <color name="colorPrimaryDark">#C2185B</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <!-- 歌词视图颜色 -->
+    <color name="colorLrcHighlight">#FFFFFF</color>
+    <color name="colorLrcNormal">#99FFFFFF</color>
+
+    <!-- UI颜色 -->
+    <color name="colorBackground">#121212</color>
+    <color name="colorSurface">#1F1F1F</color>
+    <color name="colorText">#FFFFFF</color>
+    <color name="colorTextSecondary">#B3FFFFFF</color>
+    <color name="colorHighlight">#33FFFFFF</color>
+
+    <!-- 控件颜色 -->
+    <color name="colorProgress">#FF4081</color>
+    <color name="colorProgressBackground">#33FFFFFF</color>
+    <color name="colorControlNormal">#FFFFFF</color>
+    <color name="colorControlActivated">#FF4081</color>
+    <color name="colorControlHighlight">#1FFFFFFF</color>
+</resources>
