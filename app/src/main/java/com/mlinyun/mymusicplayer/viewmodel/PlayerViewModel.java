@@ -101,7 +101,6 @@ public class PlayerViewModel extends AndroidViewModel {
             serviceConnected.postValue(false);
         }
     };
-
     // 服务回调
     private final MusicPlayerService.PlayerCallback serviceCallback = new MusicPlayerService.PlayerCallback() {
         @Override
@@ -111,6 +110,8 @@ public class PlayerViewModel extends AndroidViewModel {
 
         @Override
         public void onPositionChanged(int position) {
+            // 记录进度更新，帮助调试
+            Log.d(TAG, "ViewModel收到位置更新: " + position + "ms");
             playbackPosition.postValue(position);
         }
 
@@ -136,11 +137,18 @@ public class PlayerViewModel extends AndroidViewModel {
             // 可以添加错误处理逻辑
             Log.e(TAG, "播放错误", error);
         }
+
+        @Override
+        public void onDurationChanged(int duration) {
+            Log.d(TAG, "接收到总时长更新: " + duration + "ms");
+            PlayerViewModel.this.duration.postValue(duration);
+        }
     };
 
     /**
      * 构造函数
-     */    public PlayerViewModel(@NonNull Application application) {
+     */
+    public PlayerViewModel(@NonNull Application application) {
         super(application);
 
         // 初始化仓库
@@ -285,6 +293,7 @@ public class PlayerViewModel extends AndroidViewModel {
             playMode.postValue(mode);
         }
     }
+
     /**
      * 切换播放模式
      */
@@ -316,6 +325,7 @@ public class PlayerViewModel extends AndroidViewModel {
 
     /**
      * 播放指定歌曲
+     *
      * @param song 要播放的歌曲
      */
     public void playSong(Song song) {
@@ -392,6 +402,7 @@ public class PlayerViewModel extends AndroidViewModel {
     public LiveData<PlayMode> getPlayMode() {
         return playMode;
     }
+
     public LiveData<Lyrics> getCurrentLyrics() {
         return currentLyrics;
     }
@@ -410,6 +421,7 @@ public class PlayerViewModel extends AndroidViewModel {
 
     /**
      * 设置搜索过滤条件
+     *
      * @param query 搜索关键词
      */
     public void setSearchFilter(String query) {
@@ -419,6 +431,7 @@ public class PlayerViewModel extends AndroidViewModel {
 
     /**
      * 设置排序方法
+     *
      * @param method 排序方法
      */
     public void setSortMethod(SortMethod method) {
@@ -473,7 +486,8 @@ public class PlayerViewModel extends AndroidViewModel {
                     break;
                 case ALBUM_DESC:
                     Collections.sort(results, (s1, s2) -> s2.getAlbum().compareToIgnoreCase(s1.getAlbum()));
-                    break;                case DURATION_ASC:
+                    break;
+                case DURATION_ASC:
                     Collections.sort(results, Comparator.comparingLong(Song::getDuration));
                     break;
                 case DURATION_DESC:

@@ -32,4 +32,11 @@ public interface ServiceCallback {
      * @param errorMessage 错误信息
      */
     void onError(int errorCode, String errorMessage);
+
+    /**
+     * 总时长改变回调
+     *
+     * @param duration 媒体总时长(毫秒)
+     */
+    void onDurationChanged(int duration);
 }

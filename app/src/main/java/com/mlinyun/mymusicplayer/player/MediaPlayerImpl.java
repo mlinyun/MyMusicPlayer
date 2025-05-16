@@ -72,8 +72,15 @@ public class MediaPlayerImpl implements IPlayerEngine {
                 }
                 return false; // 错误未处理
             });
-
             mediaPlayer.setOnPreparedListener(mp -> {
+                // 在准备完成时获取并记录总时长（调试用）
+                try {
+                    int duration = mp.getDuration();
+                    Log.d(TAG, "MediaPlayer准备完成，总时长: " + duration + "ms");
+                } catch (Exception e) {
+                    Log.e(TAG, "获取媒体时长时出错", e);
+                }
+
                 if (onPreparedListener != null) {
                     onPreparedListener.onPrepared();
                 }

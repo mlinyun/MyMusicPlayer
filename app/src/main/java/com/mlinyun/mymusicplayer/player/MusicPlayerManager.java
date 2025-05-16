@@ -60,6 +60,12 @@ public class MusicPlayerManager {
             public void run() {
                 if (playerEngine != null && isPlaying() && serviceCallback != null) {
                     int position = playerEngine.getCurrentPosition();
+                    int duration = playerEngine.getDuration();
+
+                    // 记录详细的播放进度信息，帮助调试
+                    Log.d(TAG, "播放进度更新: 位置=" + position + "ms, 总时长=" + duration + "ms" +
+                            ", 进度百分比=" + (duration > 0 ? (position * 100 / duration) : 0) + "%");
+
                     serviceCallback.onPlaybackPositionChanged(position);
                 }
                 progressHandler.postDelayed(this, UPDATE_INTERVAL_MS);
@@ -99,11 +105,14 @@ public class MusicPlayerManager {
                     serviceCallback.onPlaybackStateChanged(currentState);
                 }
             });
-
             playerEngine.setOnPreparedListener(() -> {
                 currentState = PlayerState.PREPARED;
 
+                // 准备完成后立即获取并通知总时长变化
                 if (serviceCallback != null) {
+                    int duration = playerEngine.getDuration();
+                    Log.d(TAG, "媒体准备完成，总时长: " + duration + "ms");
+                    serviceCallback.onDurationChanged(duration);
                     serviceCallback.onPlaybackStateChanged(currentState);
                 }
 

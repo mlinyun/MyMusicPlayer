@@ -41,6 +41,8 @@ import java.util.Random;
  */
 public class MusicPlayerService extends Service implements ServiceCallback {
 
+    private static final String TAG = "MusicPlayerService";
+
     // 通知相关常量
     private static final String CHANNEL_ID = "music_player_channel";
     private static final int NOTIFICATION_ID = 1;
@@ -172,6 +174,12 @@ public class MusicPlayerService extends Service implements ServiceCallback {
                     if (musicPlayerManager != null &&
                             musicPlayerManager.getState() == PlayerState.PLAYING) {
                         int position = musicPlayerManager.getCurrentPosition();
+
+                        // 记录一些调试信息，帮助诊断进度更新问题
+                        int duration = musicPlayerManager.getDuration();
+                        Log.d(TAG, "进度更新: 位置=" + position + "ms, 总时长=" + duration + "ms");
+
+                        // 通知位置变化
                         for (PlayerCallback callback : callbacks) {
                             callback.onPositionChanged(position);
                         }
@@ -965,6 +973,16 @@ public class MusicPlayerService extends Service implements ServiceCallback {
     }
 
     @Override
+    public void onDurationChanged(int duration) {
+        Log.d("MusicPlayerService", "收到媒体总时长更新: " + duration + "ms");
+
+        // 通知所有回调
+        for (PlayerCallback callback : callbacks) {
+            callback.onDurationChanged(duration);
+        }
+    }
+
+    @Override
     public void onError(int errorCode, String errorMessage) {
         errorCounter++;
 
@@ -1046,5 +1064,7 @@ public class MusicPlayerService extends Service implements ServiceCallback {
         void onPlaylistChanged(List<Song> playlist);
 
         void onError(Exception error);
+
+        void onDurationChanged(int duration);
     }
 }
