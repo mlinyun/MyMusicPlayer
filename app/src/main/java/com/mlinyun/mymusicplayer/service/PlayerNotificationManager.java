@@ -58,10 +58,12 @@ public class PlayerNotificationManager {
         this.context = context;
         this.notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // 创建通知渠道
+        // 创建通知渠道，根据不同Android版本进行适配
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel();
         }
+
+        android.util.Log.d("PlayerNotificationManager", "初始化通知管理器，Android版本: " + Build.VERSION.SDK_INT);
     }
 
     /**
@@ -78,13 +80,37 @@ public class PlayerNotificationManager {
      */
     @RequiresApi(Build.VERSION_CODES.O)
     private void createNotificationChannel() {
-        NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID,
-                "音乐播放通知",
-                NotificationManager.IMPORTANCE_LOW); // 使用低重要性避免声音提示
-        channel.setDescription("显示当前播放的音乐信息");
-        channel.setShowBadge(false);
+        NotificationChannel channel;
+
+        // 根据Android版本创建适当配置的通知渠道
+        if (Build.VERSION.SDK_INT >= 35) { // Android 16 (API 35+)
+            // Android 16+ 版本使用DEFAULT重要性，确保通知稳定显示
+            channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "音乐播放通知",
+                    NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription("显示当前播放的音乐信息并控制播放");
+            channel.setShowBadge(true);
+            // 禁用通知音效
+            channel.enableVibration(false);
+            channel.setSound(null, null);
+            android.util.Log.d("PlayerNotificationManager", "创建Android 16专用通知渠道");
+        } else {
+            // 以前版本使用标准的低重要性通知渠道
+            channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "音乐播放通知",
+                    NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription("显示当前播放的音乐信息");
+            channel.setShowBadge(false);
+            android.util.Log.d("PlayerNotificationManager", "创建标准通知渠道");
+        }
+
+        // 设置通知渠道在锁屏上可见
+        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+
         notificationManager.createNotificationChannel(channel);
+        android.util.Log.d("PlayerNotificationManager", "通知渠道创建成功: " + CHANNEL_ID);
     }
 
     /**
@@ -108,62 +134,86 @@ public class PlayerNotificationManager {
             return null;
         }
 
-        // 创建点击通知时打开应用的Intent
-        Intent contentIntent = new Intent(context, MainActivity.class);
-        contentIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent contentPendingIntent = PendingIntent.getActivity(
-                context,
-                0,
-                contentIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+        try {
+            // 创建点击通知时打开应用的Intent
+            Intent contentIntent = new Intent(context, MainActivity.class);
+            contentIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
-        // 创建控制按钮的Intent
-        PendingIntent previousIntent = createActionIntent(ACTION_PREVIOUS);
-        PendingIntent playPauseIntent = createActionIntent(state == PlayerState.PLAYING ? ACTION_PAUSE : ACTION_PLAY);
-        PendingIntent nextIntent = createActionIntent(ACTION_NEXT);
-        PendingIntent stopIntent = createActionIntent(ACTION_STOP);
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
 
-        // 获取专辑封面图像
-        Bitmap albumArt = getAlbumArt(song);
+            PendingIntent contentPendingIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    contentIntent,
+                    flags
+            );
 
-        // 构建通知
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_music_note) // 需要在资源中添加此图标
-                .setLargeIcon(albumArt)
-                .setContentTitle(song.getTitle())
-                .setContentText(song.getArtist())
-                .setContentInfo(song.getAlbum())
-                .setContentIntent(contentPendingIntent)
-                .setOngoing(state == PlayerState.PLAYING)
-                .setShowWhen(false)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            // 创建控制按钮的Intent
+            PendingIntent previousIntent = createActionIntent(ACTION_PREVIOUS);
+            PendingIntent playPauseIntent = createActionIntent(state == PlayerState.PLAYING ? ACTION_PAUSE : ACTION_PLAY);
+            PendingIntent nextIntent = createActionIntent(ACTION_NEXT);
+            PendingIntent stopIntent = createActionIntent(ACTION_STOP);
 
-        // 如果有媒体会话令牌，设置样式
-        if (mediaSessionToken != null) {
-            builder.setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                    .setMediaSession(mediaSessionToken)
-                    .setShowActionsInCompactView(0, 1, 2)); // 显示前三个按钮
+            // 获取专辑封面图像
+            Bitmap albumArt = getAlbumArt(song);
+
+            // 构建通知
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_music_note)
+                    .setLargeIcon(albumArt)
+                    .setContentTitle(song.getTitle())
+                    .setContentText(song.getArtist())
+                    .setSubText(song.getAlbum())
+                    .setContentIntent(contentPendingIntent)
+                    .setOngoing(state == PlayerState.PLAYING)
+                    .setShowWhen(false)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+            // 针对Android 16+设置前台服务类型
+            if (Build.VERSION.SDK_INT >= 34) { // Android 14 (API 34) or higher
+                builder.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE);
+                builder.setCategory(Notification.CATEGORY_TRANSPORT);
+            } else if (Build.VERSION.SDK_INT >= 33) { // Android 13 (API 33)
+                builder.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE);
+            }
+
+            // 如果有媒体会话令牌，设置样式
+            if (mediaSessionToken != null) {
+                builder.setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
+                        .setMediaSession(mediaSessionToken)
+                        .setShowActionsInCompactView(0, 1, 2)); // 显示前三个按钮
+            }
+
+            // 添加控制按钮
+            builder.addAction(R.drawable.ic_previous, "上一首", previousIntent);
+
+            // 根据状态添加播放/暂停按钮
+            if (state == PlayerState.PLAYING) {
+                builder.addAction(R.drawable.ic_pause, "暂停", playPauseIntent);
+            } else {
+                builder.addAction(R.drawable.ic_play, "播放", playPauseIntent);
+            }
+
+            builder.addAction(R.drawable.ic_next, "下一首", nextIntent);
+            builder.addAction(R.drawable.ic_close, "停止", stopIntent);
+
+            try {
+                // 构建并返回通知
+                Notification notification = builder.build();
+                notificationManager.notify(NOTIFICATION_ID, notification);
+                return notification;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
-
-        // 添加控制按钮
-        builder.addAction(R.drawable.ic_previous, "上一首", previousIntent);
-
-        // 根据状态添加播放/暂停按钮
-        if (state == PlayerState.PLAYING) {
-            builder.addAction(R.drawable.ic_pause, "暂停", playPauseIntent);
-        } else {
-            builder.addAction(R.drawable.ic_play, "播放", playPauseIntent);
-        }
-
-        builder.addAction(R.drawable.ic_next, "下一首", nextIntent);
-        builder.addAction(R.drawable.ic_close, "停止", stopIntent);
-
-        // 构建并返回通知
-        Notification notification = builder.build();
-        notificationManager.notify(NOTIFICATION_ID, notification);
-        return notification;
     }
 
     /**
@@ -176,11 +226,17 @@ public class PlayerNotificationManager {
         Intent intent = new Intent(context, MusicPlayerService.class);
         intent.setAction(action);
 
+        // 从Android M开始，可以使用FLAG_IMMUTABLE标志
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+
         return PendingIntent.getService(
                 context,
                 getRequestCode(action),
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                flags
         );
     }
 

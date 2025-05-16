@@ -3,8 +3,30 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="SelectedPhotoAccess">
 
+    <!-- Android 10 及以下适用 -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- Android 13+ 权限拆分，使用时按需声明 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <!-- 可选：写权限（仅限 Android 9 及以下，之后被 Scoped Storage 替代） -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- 通知权限（Android 13+） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 前台服务权限（如播放服务） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- 唤醒锁权限（用于后台播放保持 CPU 唤醒） -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -43,7 +65,16 @@
             android:name=".service.MusicPlayerService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+                <action android:name="com.mlinyun.mymusicplayer.ACTION_PLAY" />
+                <action android:name="com.mlinyun.mymusicplayer.ACTION_PAUSE" />
+                <action android:name="com.mlinyun.mymusicplayer.ACTION_PREVIOUS" />
+                <action android:name="com.mlinyun.mymusicplayer.ACTION_NEXT" />
+                <action android:name="com.mlinyun.mymusicplayer.ACTION_STOP" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

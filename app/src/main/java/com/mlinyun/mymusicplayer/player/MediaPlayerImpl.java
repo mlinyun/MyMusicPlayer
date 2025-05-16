@@ -38,68 +38,151 @@ public class MediaPlayerImpl implements IPlayerEngine {
 
     @Override
     public void initialize() {
+        // 安全地释放任何现有的MediaPlayer实例
         releaseMediaPlayer();
-        mediaPlayer = new MediaPlayer();
 
-        // 设置音频属性
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            mediaPlayer.setAudioAttributes(
-                    new AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .build()
-            );
-        } else {
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        }
+        try {
+            // 创建新的MediaPlayer实例
+            mediaPlayer = new MediaPlayer();
 
-        // 设置监听器
-        mediaPlayer.setOnCompletionListener(mp -> {
-            if (onCompletionListener != null) {
-                onCompletionListener.onCompletion();
+            // 设置音频属性
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mediaPlayer.setAudioAttributes(
+                        new AudioAttributes.Builder()
+                                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .build()
+                );
+            } else {
+                mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             }
-        });
 
-        mediaPlayer.setOnErrorListener((mp, what, extra) -> {
-            Log.e(TAG, "MediaPlayer error: what=" + what + ", extra=" + extra);
+            // 设置监听器
+            mediaPlayer.setOnCompletionListener(mp -> {
+                if (onCompletionListener != null) {
+                    onCompletionListener.onCompletion();
+                }
+            });
+
+            mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                Log.e(TAG, "MediaPlayer error: what=" + what + ", extra=" + extra);
+                if (onErrorListener != null) {
+                    onErrorListener.onError(what, extra);
+                    return true; // 错误已处理
+                }
+                return false; // 错误未处理
+            });
+
+            mediaPlayer.setOnPreparedListener(mp -> {
+                if (onPreparedListener != null) {
+                    onPreparedListener.onPrepared();
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing MediaPlayer", e);
+            mediaPlayer = null;
             if (onErrorListener != null) {
-                onErrorListener.onError(what, extra);
-                return true; // 错误已处理
+                onErrorListener.onError(MediaPlayer.MEDIA_ERROR_UNKNOWN, 0);
             }
-            return false; // 错误未处理
-        });
-
-        mediaPlayer.setOnPreparedListener(mp -> {
-            if (onPreparedListener != null) {
-                onPreparedListener.onPrepared();
-            }
-        });
+        }
     }
 
     @Override
     public void prepare(Uri uri) {
-        if (mediaPlayer == null) {
-            initialize();
-        }
-
-        try {
-            // 重置播放器以便重新使用
-            mediaPlayer.reset();
-            currentUri = uri;
-
-            // 设置数据源并准备播放
-            mediaPlayer.setDataSource(context, uri);
-            mediaPlayer.prepareAsync(); // 异步准备，防止阻塞UI线程
-        } catch (IOException e) {
-            Log.e(TAG, "Error preparing media player", e);
+        // 检查URI是否有效
+        if (uri == null) {
+            Log.e(TAG, "Cannot prepare with null URI");
             if (onErrorListener != null) {
                 onErrorListener.onError(MediaPlayer.MEDIA_ERROR_UNKNOWN, 0);
             }
+            return;
+        }
+
+        // 确保MediaPlayer实例有效
+        if (mediaPlayer == null) {
+            Log.d(TAG, "MediaPlayer was null, initializing");
+            initialize();
+
+            // 再次检查初始化是否成功
+            if (mediaPlayer == null) {
+                Log.e(TAG, "Failed to initialize MediaPlayer");
+                if (onErrorListener != null) {
+                    onErrorListener.onError(MediaPlayer.MEDIA_ERROR_UNKNOWN, 0);
+                }
+                return;
+            }
+        }
+
+        // 记录当前URI
+        currentUri = uri;
+
+        try {
+            // 检查文件是否可读
+            if (uri.getScheme() != null && uri.getScheme().equals("file")) {
+                java.io.File file = new java.io.File(uri.getPath());
+                if (!file.exists() || !file.canRead()) {
+                    Log.e(TAG, "File doesn't exist or can't be read: " + uri.getPath());
+                    if (onErrorListener != null) {
+                        onErrorListener.onError(MediaPlayer.MEDIA_ERROR_IO, 0);
+                    }
+                    return;
+                }
+            }
+
+            // 安全重置播放器
+            try {
+                mediaPlayer.reset();
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "Error resetting player, reinitializing", e);
+                initialize();
+                if (mediaPlayer == null) return;
+            }
+
+            // 设置数据源并准备播放
+            mediaPlayer.setDataSource(context, uri);
+
+            // 使用异步准备，防止阻塞UI线程
+            mediaPlayer.prepareAsync();
+
+        } catch (SecurityException e) {
+            Log.e(TAG, "Security exception preparing media player", e);
+            handlePrepareError(e);
+        } catch (IOException e) {
+            Log.e(TAG, "IO error preparing media player", e);
+            handlePrepareError(e);
         } catch (IllegalStateException e) {
             Log.e(TAG, "MediaPlayer in illegal state", e);
-            // 尝试重新初始化播放器
+            handlePrepareError(e);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Invalid argument for MediaPlayer", e);
+            handlePrepareError(e);
+        } catch (Exception e) {
+            // 捕获所有其他可能的异常
+            Log.e(TAG, "Unexpected error preparing media player", e);
+            handlePrepareError(e);
+        }
+    }
+
+    /**
+     * 处理准备过程中的错误
+     */
+    private void handlePrepareError(Exception e) {
+        // 记录详细错误
+        Log.e(TAG, "Media prepare error: " + e.getMessage(), e);
+
+        // 尝试释放并重新初始化播放器
+        try {
+            releaseMediaPlayer();
             initialize();
-            prepare(uri);
+
+            // 通知错误回调
+            if (onErrorListener != null) {
+                int errorType = (e instanceof IOException) ?
+                        MediaPlayer.MEDIA_ERROR_IO : MediaPlayer.MEDIA_ERROR_UNKNOWN;
+                onErrorListener.onError(errorType, 0);
+            }
+        } catch (Exception ex) {
+            Log.e(TAG, "Error handling prepare failure", ex);
         }
     }
 
@@ -133,9 +216,23 @@ public class MediaPlayerImpl implements IPlayerEngine {
     public void stop() {
         if (mediaPlayer != null) {
             try {
-                mediaPlayer.stop();
+                // 检查是否正在播放
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                } else {
+                    // 如果不是播放状态，尝试重置
+                    mediaPlayer.reset();
+                }
             } catch (IllegalStateException e) {
                 Log.e(TAG, "Error stopping playback", e);
+                // 出错时尝试重置
+                try {
+                    mediaPlayer.reset();
+                } catch (Exception ignored) {
+                    // 忽略重置错误
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Unexpected error stopping MediaPlayer", e);
             }
         }
     }
@@ -166,12 +263,28 @@ public class MediaPlayerImpl implements IPlayerEngine {
     private void releaseMediaPlayer() {
         if (mediaPlayer != null) {
             try {
-                mediaPlayer.stop();
-            } catch (IllegalStateException e) {
-                Log.e(TAG, "Error stopping media player before release", e);
+                // 取消所有回调
+                mediaPlayer.setOnCompletionListener(null);
+                mediaPlayer.setOnErrorListener(null);
+                mediaPlayer.setOnPreparedListener(null);
+
+                // 检查播放状态并安全停止
+                try {
+                    if (mediaPlayer.isPlaying()) {
+                        mediaPlayer.stop();
+                    }
+                } catch (IllegalStateException e) {
+                    Log.w(TAG, "MediaPlayer was in an invalid state when trying to stop", e);
+                }
+
+                // 释放资源
+                mediaPlayer.release();
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing media player", e);
+            } finally {
+                mediaPlayer = null;
+                currentUri = null;
             }
-            mediaPlayer.release();
-            mediaPlayer = null;
         }
     }
 
@@ -192,9 +305,18 @@ public class MediaPlayerImpl implements IPlayerEngine {
     public int getDuration() {
         if (mediaPlayer != null) {
             try {
-                return mediaPlayer.getDuration();
+                // 确保MediaPlayer处于合法状态
+                if (mediaPlayer.isPlaying() ||
+                        currentUri != null) { // 只有在正在播放或已设置URI时才获取时长
+                    return mediaPlayer.getDuration();
+                } else {
+                    return 0;
+                }
             } catch (IllegalStateException e) {
-                Log.e(TAG, "Error getting duration", e);
+                Log.e(TAG, "Error getting duration: MediaPlayer in illegal state", e);
+                return 0;
+            } catch (Exception e) {
+                Log.e(TAG, "Unexpected error getting duration", e);
                 return 0;
             }
         }
@@ -219,6 +341,10 @@ public class MediaPlayerImpl implements IPlayerEngine {
                 return mediaPlayer.isPlaying();
             } catch (IllegalStateException e) {
                 Log.e(TAG, "Error checking playback state", e);
+                return false;
+            } catch (Exception e) {
+                Log.e(TAG, "Unexpected error checking playback state", e);
+                // 必须捕获所有可能的异常，避免应用崩溃
                 return false;
             }
         }

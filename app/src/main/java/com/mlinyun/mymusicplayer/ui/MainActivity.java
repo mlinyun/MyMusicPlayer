@@ -61,6 +61,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // 日志过滤，减少系统级警告（如ashmem废弃警告）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            System.setProperty("log.tag.AshmemMemory", "SILENT");
+        }
+
         // 初始化UI组件
         initViews();
 

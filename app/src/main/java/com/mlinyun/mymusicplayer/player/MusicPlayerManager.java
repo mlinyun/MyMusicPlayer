@@ -6,6 +6,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import java.io.File;
+
 import com.mlinyun.mymusicplayer.model.Song;
 
 /**
@@ -37,13 +39,18 @@ public class MusicPlayerManager {
         this.context = context;
         this.currentState = PlayerState.IDLE;
         this.playMode = PlayMode.LOOP; // 默认为列表循环播放模式
-
         // 创建播放引擎
         if (engineType == PlayerEngineType.MEDIA_PLAYER) {
             playerEngine = new MediaPlayerImpl(context);
+            Log.d(TAG, "已创建MediaPlayer播放引擎");
+        } else if (engineType == PlayerEngineType.EXO_PLAYER) {
+            // 使用ExoPlayer实现，更适合Android 16 (SDK 35)
+            playerEngine = new ExoPlayerImpl(context);
+            Log.d(TAG, "已创建ExoPlayer播放引擎");
         } else {
-            // 可以在这里添加ExoPlayer实现
+            // 默认回退到MediaPlayer
             playerEngine = new MediaPlayerImpl(context);
+            Log.d(TAG, "使用默认MediaPlayer播放引擎");
         }
 
         // 初始化进度更新Handler
@@ -67,41 +74,53 @@ public class MusicPlayerManager {
      * 初始化播放器
      */
     public void initialize() {
-        playerEngine.initialize();
+        try {
+            playerEngine.initialize();
 
-        // 设置监听器
-        playerEngine.setOnCompletionListener(() -> {
-            currentState = PlayerState.COMPLETED;
-            stopProgressTracking();
+            // 设置监听器
+            playerEngine.setOnCompletionListener(() -> {
+                currentState = PlayerState.COMPLETED;
+                stopProgressTracking();
 
-            if (serviceCallback != null) {
-                serviceCallback.onPlaybackCompleted();
-                serviceCallback.onPlaybackStateChanged(currentState);
-            }
-        });
+                if (serviceCallback != null) {
+                    serviceCallback.onPlaybackCompleted();
+                    serviceCallback.onPlaybackStateChanged(currentState);
+                }
+            });
 
-        playerEngine.setOnErrorListener((what, extra) -> {
+            playerEngine.setOnErrorListener((what, extra) -> {
+                currentState = PlayerState.ERROR;
+                stopProgressTracking();
+
+                Log.e(TAG, "播放引擎错误: " + what + ", " + extra);
+
+                if (serviceCallback != null) {
+                    serviceCallback.onError(what, "播放出错: " + what + ", " + extra);
+                    serviceCallback.onPlaybackStateChanged(currentState);
+                }
+            });
+
+            playerEngine.setOnPreparedListener(() -> {
+                currentState = PlayerState.PREPARED;
+
+                if (serviceCallback != null) {
+                    serviceCallback.onPlaybackStateChanged(currentState);
+                }
+
+                // 如果设置了自动播放，则准备完成后立即播放
+                play();
+            });
+
+            currentState = PlayerState.IDLE;
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing player engine", e);
             currentState = PlayerState.ERROR;
-            stopProgressTracking();
 
             if (serviceCallback != null) {
-                serviceCallback.onError(what, "播放出错: " + what + ", " + extra);
+                serviceCallback.onError(-1, "播放器初始化失败: " + e.getMessage());
                 serviceCallback.onPlaybackStateChanged(currentState);
             }
-        });
-
-        playerEngine.setOnPreparedListener(() -> {
-            currentState = PlayerState.PREPARED;
-
-            if (serviceCallback != null) {
-                serviceCallback.onPlaybackStateChanged(currentState);
-            }
-
-            // 如果设置了自动播放，则准备完成后立即播放
-            play();
-        });
-
-        currentState = PlayerState.IDLE;
+        }
     }
 
     /**
@@ -110,14 +129,46 @@ public class MusicPlayerManager {
      * @param song 待播放的歌曲
      */
     public void prepareAndPlay(Song song) {
+        // 预检查
         if (song == null || song.getPath() == null) {
+            Log.e(TAG, "尝试播放无效的歌曲数据");
             if (serviceCallback != null) {
                 serviceCallback.onError(-1, "无效的歌曲数据");
             }
             return;
         }
 
+        // 先停止当前可能正在播放的内容
+        if (currentState == PlayerState.PLAYING || currentState == PlayerState.PAUSED) {
+            try {
+                playerEngine.stop();
+            } catch (Exception e) {
+                Log.e(TAG, "停止当前播放时出错", e);
+                // 忽略停止时的异常，继续尝试播放新歌曲
+            }
+        }
+
         try {
+            // 检查文件是否存在
+            File file = new File(song.getPath());
+            if (!file.exists()) {
+                Log.e(TAG, "文件不存在: " + song.getPath());
+                if (serviceCallback != null) {
+                    serviceCallback.onError(-1, "文件不存在或无法访问: " + song.getPath());
+                }
+                return;
+            }
+
+            if (!file.canRead()) {
+                Log.e(TAG, "文件无法读取: " + song.getPath());
+                if (serviceCallback != null) {
+                    serviceCallback.onError(-1, "文件无法读取: " + song.getPath());
+                }
+                return;
+            }
+
+            Log.d(TAG, "准备播放: " + song.getTitle() + " (" + song.getPath() + ")");
+
             currentSong = song;
             Uri uri = Uri.parse(song.getPath());
             currentState = PlayerState.PREPARING;
@@ -126,9 +177,11 @@ public class MusicPlayerManager {
                 serviceCallback.onPlaybackStateChanged(currentState);
             }
 
+            // 准备播放引擎
             playerEngine.prepare(uri);
+
         } catch (Exception e) {
-            Log.e(TAG, "Error preparing song", e);
+            Log.e(TAG, "准备歌曲时出错", e);
             currentState = PlayerState.ERROR;
 
             if (serviceCallback != null) {
@@ -142,28 +195,64 @@ public class MusicPlayerManager {
      * 开始播放
      */
     public void play() {
-        if (currentState == PlayerState.PREPARED || currentState == PlayerState.PAUSED) {
-            playerEngine.play();
-            currentState = PlayerState.PLAYING;
-            startProgressTracking();
+        try {
+            switch (currentState) {
+                case PREPARED:
+                case PAUSED:
+                    Log.d(TAG, "播放器状态: " + currentState + " - 开始播放");
+                    playerEngine.play();
+                    currentState = PlayerState.PLAYING;
+                    startProgressTracking();
+
+                    if (serviceCallback != null) {
+                        serviceCallback.onPlaybackStateChanged(currentState);
+                    }
+                    break;
+
+                case COMPLETED:
+                    // 如果播放完成，从头开始播放
+                    Log.d(TAG, "播放器状态: COMPLETED - 重新从头开始播放");
+                    seekTo(0);
+                    playerEngine.play();
+                    currentState = PlayerState.PLAYING;
+                    startProgressTracking();
+
+                    if (serviceCallback != null) {
+                        serviceCallback.onPlaybackStateChanged(currentState);
+                    }
+                    break;
+
+                case STOPPED:
+                case ERROR:
+                    // 如果已停止或有错误，需要重新准备
+                    Log.d(TAG, "播放器状态: " + currentState + " - 需要重新准备");
+                    if (currentSong != null) {
+                        prepareAndPlay(currentSong);
+                    } else {
+                        Log.e(TAG, "无法播放：当前无歌曲");
+                        if (serviceCallback != null) {
+                            serviceCallback.onError(-1, "无法播放：当前无歌曲");
+                        }
+                    }
+                    break;
+
+                case PLAYING:
+                    // 已经在播放，不需要操作
+                    Log.d(TAG, "播放器已经处于播放状态");
+                    break;
+
+                default:
+                    // 其他状态（如PREPARING, IDLE等），不做操作
+                    Log.d(TAG, "播放器当前状态不支持播放操作: " + currentState);
+                    break;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "播放过程中发生错误", e);
+            currentState = PlayerState.ERROR;
 
             if (serviceCallback != null) {
+                serviceCallback.onError(-1, "播放失败: " + e.getMessage());
                 serviceCallback.onPlaybackStateChanged(currentState);
-            }
-        } else if (currentState == PlayerState.COMPLETED) {
-            // 如果播放完成，从头开始播放
-            seekTo(0);
-            playerEngine.play();
-            currentState = PlayerState.PLAYING;
-            startProgressTracking();
-
-            if (serviceCallback != null) {
-                serviceCallback.onPlaybackStateChanged(currentState);
-            }
-        } else if (currentState == PlayerState.STOPPED) {
-            // 如果已停止，需要重新准备
-            if (currentSong != null) {
-                prepareAndPlay(currentSong);
             }
         }
     }
