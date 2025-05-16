@@ -3,7 +3,9 @@ package com.mlinyun.mymusicplayer.ui;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.os.Bundle;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
@@ -11,6 +13,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,7 +35,6 @@ import com.mlinyun.mymusicplayer.viewmodel.PlayerViewModel;
  * 负责显示和控制当前播放歌曲的界面
  */
 public class PlaybackFragment extends Fragment {
-
     // UI组件
     private ImageView ivAlbumArt;
     private TextView tvSongTitle;
@@ -50,22 +52,32 @@ public class PlaybackFragment extends Fragment {
     private View lyricsCard;
     private LrcView lrcViewFullscreen;
     private boolean isShowingLyrics = false;
+    private ImageView ivHintToAlbum; // 返回专辑提示按钮
 
     // ViewModel
     private PlayerViewModel viewModel;
-
     // 专辑封面旋转动画
     private ObjectAnimator rotationAnimator;
 
     // 是否用户正在拖动进度条
     private boolean isUserSeeking = false;
 
+    // 记录上次显示Toast提示的时间
+    private long lastToastTime = 0;
+
+    // 记录双击检测的上次点击时间
+    private long lastClickTime = 0;
+
+    // 声明为类的成员变量
+    private GestureDetector gestureDetector;
+
     /**
      * 创建Fragment视图
      */
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_playback, container, false);
     }
 
@@ -90,6 +102,9 @@ public class PlaybackFragment extends Fragment {
 
         // 观察ViewModel数据变化
         observeViewModel();
+
+        // 打印日志确认双击功能初始化
+        android.util.Log.d("PlaybackFragment", "双击切换功能已初始化");
     }
 
     /**
@@ -107,12 +122,18 @@ public class PlaybackFragment extends Fragment {
         ibNext = view.findViewById(R.id.ibNext);
         ibPlayMode = view.findViewById(R.id.ibPlayMode);
         ibPlaylist = view.findViewById(R.id.ibPlaylist);
-        lrcView = view.findViewById(R.id.lrcView);
-
-        // 初始化新增的UI组件
+        lrcView = view.findViewById(R.id.lrcView);        // 初始化新增的UI组件
         albumContainer = view.findViewById(R.id.albumContainer);
         lyricsCard = view.findViewById(R.id.lyricsCard);
         lrcViewFullscreen = view.findViewById(R.id.lrcViewFullscreen);
+        ivHintToAlbum = view.findViewById(R.id.ivHintToAlbum);
+
+        // 记录日志帮助调试
+        if (ivHintToAlbum == null) {
+            android.util.Log.e("PlaybackFragment", "找不到返回专辑按钮(ID: ivHintToAlbum)");
+        } else {
+            android.util.Log.d("PlaybackFragment", "已找到返回专辑按钮");
+        }
 
         // 设置默认状态
         tvCurrentTime.setText("00:00");
@@ -139,20 +160,85 @@ public class PlaybackFragment extends Fragment {
         ibNext.setOnClickListener(v -> viewModel.playNext());
 
         // 播放模式按钮
-        ibPlayMode.setOnClickListener(v -> viewModel.togglePlayMode());
-        // 播放列表按钮
+        ibPlayMode.setOnClickListener(v -> viewModel.togglePlayMode());        // 播放列表按钮
         ibPlaylist.setOnClickListener(v -> {
             // 切换到播放列表页面
             if (getActivity() instanceof MainActivity) {
                 ((MainActivity) getActivity()).navigateToPlaylist();
             }
         });
-
         // 专辑封面点击显示歌词
         albumContainer.setOnClickListener(v -> toggleLyricsView(true));
+        // 创建GestureDetector处理双击事件
+        gestureDetector = new GestureDetector(requireContext(),
+                new GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onDoubleTap(MotionEvent e) {
+                        android.util.Log.d("PlaybackFragment", "检测到双击事件");
+                        // 双击时返回专辑封面
+                        if (isShowingLyrics) {
+                            toggleLyricsView(false);
+                            return true;
+                        }
+                        return false;
+                    }
 
-        // 歌词视图点击返回专辑封面
-        lyricsCard.setOnClickListener(v -> toggleLyricsView(false));
+                    @Override
+                    public boolean onSingleTapConfirmed(MotionEvent e) {
+                        // 单击时不执行任何操作
+                        android.util.Log.d("PlaybackFragment", "检测到单击事件");
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onDown(MotionEvent e) {
+                        // 必须返回true，表示关注该事件，否则其他事件不会被调用
+                        return true;
+                    }
+                });
+        // 设置歌词卡片的触摸监听器
+        lyricsCard.setOnTouchListener((v, event) -> {
+            // 记录触摸位置和时间，用于调试
+            android.util.Log.d("PlaybackFragment", "歌词视图触摸事件: " + event.getAction()
+                    + ", X=" + event.getX() + ", Y=" + event.getY());
+
+            // 传递给GestureDetector处理
+            boolean handled = gestureDetector.onTouchEvent(event);
+            android.util.Log.d("PlaybackFragment", "GestureDetector处理结果: " + handled);
+
+            // 确保view执行点击事件
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                v.performClick();
+            }
+
+            // 总是返回true以拦截所有事件
+            return true;
+        });
+        // 同样为全屏歌词视图设置触摸监听器，确保无论用户点击哪里都能接收到事件
+        lrcViewFullscreen.setOnTouchListener((v, event) -> {
+            android.util.Log.d("PlaybackFragment", "全屏歌词触摸事件: " + event.getAction());
+            // 让GestureDetector处理事件
+            boolean handled = gestureDetector.onTouchEvent(event);
+
+            // 确保view执行点击事件
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                v.performClick();
+            }
+
+            // 返回true表示已处理
+            return true;
+        });
+        // 为返回专辑提示按钮设置点击监听器
+        if (ivHintToAlbum != null) {
+            ivHintToAlbum.setOnClickListener(v -> {
+                android.util.Log.d("PlaybackFragment", "点击返回专辑提示按钮");
+                if (isShowingLyrics) {
+                    toggleLyricsView(false);
+                }
+            });
+        } else {
+            android.util.Log.e("PlaybackFragment", "返回专辑按钮未找到");
+        }
 
         // 进度条监听
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -181,9 +267,7 @@ public class PlaybackFragment extends Fragment {
                 }
                 isUserSeeking = false;
             }
-        });
-
-        // 歌词点击监听
+        });        // 歌词点击监听
         lrcView.setLrcViewListener(new LrcView.LrcViewListener() {
             @Override
             public void onLrcViewClick() {
@@ -196,6 +280,21 @@ public class PlaybackFragment extends Fragment {
                 viewModel.seekTo((int) lrcLine.getTimeMs());
             }
         });
+
+        // 设置全屏歌词视图的点击监听
+        // 这里不需要处理单击事件，因为我们已经用GestureDetector处理了触摸事件
+        lrcViewFullscreen.setLrcViewListener(new LrcView.LrcViewListener() {
+            @Override
+            public void onLrcViewClick() {
+                // 不执行任何操作，由GestureDetector处理触摸事件
+            }
+
+            @Override
+            public void onLrcLineTap(int line, com.mlinyun.mymusicplayer.model.LyricLine lrcLine) {
+                // 点击全屏歌词行时跳转到对应时间点
+                viewModel.seekTo((int) lrcLine.getTimeMs());
+            }
+        });
     }
 
     /**
@@ -204,30 +303,42 @@ public class PlaybackFragment extends Fragment {
      * @param showLyrics 是否显示歌词
      */
     private void toggleLyricsView(boolean showLyrics) {
+        // 记录当前状态，帮助调试
+        android.util.Log.d("PlaybackFragment", "toggleLyricsView: 当前=" + isShowingLyrics + ", 目标=" + showLyrics);
+
         if (isShowingLyrics == showLyrics) return; // 避免重复切换
 
         isShowingLyrics = showLyrics;
 
         View lyricsContainer = requireView().findViewById(R.id.lyricsContainer);
+        View albumLyricsContainer = requireView().findViewById(R.id.albumLyricsContainer);
 
         if (showLyrics) {
-            // 设置歌词卡片初始状态
+            // 显示全屏歌词
             lyricsCard.setAlpha(0f);
             lyricsCard.setVisibility(View.VISIBLE);
 
-            // 创建专辑淡出动画
-            albumContainer.animate().alpha(0f).setDuration(300).withEndAction(() -> {
-                albumContainer.setVisibility(View.GONE);
-                albumContainer.setAlpha(1f); // 重置透明度供下次使用
-            });
+            // 隐藏专辑图片和小型歌词预览
+            albumLyricsContainer.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .withEndAction(() -> {
+                        albumLyricsContainer.setVisibility(View.GONE);
+                        albumLyricsContainer.setAlpha(1f); // 重置透明度供下次使用
+                    });
 
             // 创建歌词淡入动画
-            lyricsCard.animate().alpha(1f).setDuration(300);
+            lyricsCard.animate()
+                    .alpha(1f)
+                    .setDuration(300);
 
             // 隐藏小型歌词预览
-            lyricsContainer.animate().alpha(0f).setDuration(300).withEndAction(() -> {
-                lyricsContainer.setVisibility(View.GONE);
-            });
+            lyricsContainer.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .withEndAction(() -> {
+                        lyricsContainer.setVisibility(View.GONE);
+                    });
 
             // 同步歌词到全屏歌词视图
             Lyrics lyrics = viewModel.getCurrentLyrics().getValue();
@@ -241,28 +352,54 @@ public class PlaybackFragment extends Fragment {
 
             // 暂停专辑旋转动画
             pauseAlbumRotation();
+            // 显示Toast提示，双击歌词返回专辑视图
+            Toast.makeText(requireContext(), "双击屏幕返回专辑视图，或点击右上角箭头返回", Toast.LENGTH_LONG).show();
+            lastToastTime = System.currentTimeMillis();
+
+            // 确保返回专辑按钮可见
+            if (ivHintToAlbum != null) {
+                ivHintToAlbum.setVisibility(View.VISIBLE);
+                ivHintToAlbum.setAlpha(0.7f);
+            }
+
+            // 确保双击事件监听器正常工作
+            ensureDoubleTapListenerSetup();
         } else {
-            // 设置专辑容器初始状态
-            albumContainer.setAlpha(0f);
-            albumContainer.setVisibility(View.VISIBLE);
+            // 记录日志，帮助调试
+            android.util.Log.d("PlaybackFragment", "切换回专辑视图");
+
+            // 显示专辑图片和小型歌词预览
+            albumLyricsContainer.setAlpha(0f);
+            albumLyricsContainer.setVisibility(View.VISIBLE);
 
             // 创建歌词淡出动画
-            lyricsCard.animate().alpha(0f).setDuration(300).withEndAction(() -> {
-                lyricsCard.setVisibility(View.GONE);
-                lyricsCard.setAlpha(1f); // 重置透明度供下次使用
-            });
+            lyricsCard.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .withEndAction(() -> {
+                        lyricsCard.setVisibility(View.GONE);
+                        lyricsCard.setAlpha(1f); // 重置透明度供下次使用
+                    });
 
             // 创建专辑淡入动画
-            albumContainer.animate().alpha(1f).setDuration(300);
+            albumLyricsContainer.animate()
+                    .alpha(1f)
+                    .setDuration(300);
 
             // 显示小型歌词预览
             lyricsContainer.setVisibility(View.VISIBLE);
             lyricsContainer.setAlpha(0f);
-            lyricsContainer.animate().alpha(1f).setDuration(300);
-
+            lyricsContainer.animate()
+                    .alpha(1f)
+                    .setDuration(300);
             // 如果正在播放则恢复专辑旋转动画
             if (viewModel.getPlayerState().getValue() == PlayerState.PLAYING) {
                 startAlbumRotation();
+            }
+
+            // 隐藏返回专辑按钮
+            if (ivHintToAlbum != null) {
+                ivHintToAlbum.setVisibility(View.GONE);
             }
         }
     }
@@ -320,7 +457,12 @@ public class PlaybackFragment extends Fragment {
 
         // 加载专辑封面，确保使用默认图片
         if (song.getAlbumArtUri() != null) {
-            Glide.with(this).load(song.getAlbumArtUri()).apply(RequestOptions.centerCropTransform()).placeholder(R.drawable.default_album).error(R.drawable.default_album).into(ivAlbumArt);
+            Glide.with(this)
+                    .load(song.getAlbumArtUri())
+                    .apply(RequestOptions.centerCropTransform())
+                    .placeholder(R.drawable.default_album)
+                    .error(R.drawable.default_album)
+                    .into(ivAlbumArt);
         } else {
             // 没有专辑封面时使用默认图片
             ivAlbumArt.setImageResource(R.drawable.default_album);
@@ -443,6 +585,174 @@ public class PlaybackFragment extends Fragment {
     private void pauseAlbumRotation() {
         if (rotationAnimator != null && rotationAnimator.isStarted()) {
             rotationAnimator.pause();
+        }
+    }
+
+    /**
+     * Fragment恢复时调用
+     */
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // 记录日志，帮助调试
+        android.util.Log.d("PlaybackFragment", "onResume: isShowingLyrics=" + isShowingLyrics);
+
+        // 确保歌词显示与当前状态同步
+        if (isShowingLyrics) {
+            // 同步当前播放进度到歌词
+            Integer position = viewModel.getPlaybackPosition().getValue();
+            if (position != null) {
+                lrcViewFullscreen.updateTime(position);
+            }
+
+            // 确保歌词显示正确
+            Lyrics lyrics = viewModel.getCurrentLyrics().getValue();
+            if (lyrics != null && lrcViewFullscreen != null) {
+                lrcViewFullscreen.setLyrics(lyrics);
+            }            // 恢复双击提示（如果是用户第一次查看歌词）
+            if (System.currentTimeMillis() - lastToastTime > 60000) { // 1分钟内不重复显示
+                Toast.makeText(requireContext(), "双击屏幕返回专辑", Toast.LENGTH_LONG).show();
+                lastToastTime = System.currentTimeMillis();
+            }
+
+            // 确保双击事件监听器正常工作
+            ensureDoubleTapListenerSetup();
+
+            // 设置备选的返回方法
+            setupFallbackReturnMethod();
+        } else {
+            // 如果正在播放，确保专辑旋转动画继续
+            if (viewModel.getPlayerState().getValue() == PlayerState.PLAYING) {
+                startAlbumRotation();
+            }
+        }
+    }
+
+    /**
+     * 确保双击事件监听器正确设置
+     */
+    private void ensureDoubleTapListenerSetup() {
+        if (gestureDetector == null) {
+            // 重新创建GestureDetector
+            gestureDetector = new GestureDetector(requireContext(),
+                    new GestureDetector.SimpleOnGestureListener() {
+                        @Override
+                        public boolean onDoubleTap(MotionEvent e) {
+                            android.util.Log.d("PlaybackFragment", "检测到双击事件");
+                            // 双击时返回专辑封面
+                            if (isShowingLyrics) {
+                                toggleLyricsView(false);
+                                return true;
+                            }
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onSingleTapConfirmed(MotionEvent e) {
+                            // 单击时不执行任何操作
+                            android.util.Log.d("PlaybackFragment", "检测到单击事件");
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onDown(MotionEvent e) {
+                            // 必须返回true，表示关注该事件，否则其他事件不会被调用
+                            return true;
+                        }
+                    });
+        }
+
+        // 重新设置歌词卡片的触摸监听器
+        if (lyricsCard != null) {
+            lyricsCard.setOnTouchListener((v, event) -> {
+                // 记录触摸位置和时间，用于调试
+                android.util.Log.d("PlaybackFragment", "歌词视图触摸事件: " + event.getAction()
+                        + ", X=" + event.getX() + ", Y=" + event.getY());
+
+                // 传递给GestureDetector处理
+                boolean handled = gestureDetector.onTouchEvent(event);
+                android.util.Log.d("PlaybackFragment", "GestureDetector处理结果: " + handled);
+
+                // 确保view执行点击事件
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    v.performClick();
+                }
+
+                // 总是返回true以拦截所有事件
+                return true;
+            });
+        }
+        // 同样为全屏歌词视图设置触摸监听器
+        if (lrcViewFullscreen != null) {
+            lrcViewFullscreen.setOnTouchListener((v, event) -> {
+                android.util.Log.d("PlaybackFragment", "全屏歌词触摸事件: " + event.getAction());
+                // 让GestureDetector处理事件
+                boolean handled = gestureDetector.onTouchEvent(event);
+
+                // 确保view执行点击事件
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    v.performClick();
+                }
+
+                // 返回true表示已处理
+                return true;
+            });
+        }
+        // 为返回专辑提示按钮设置点击监听器
+        if (ivHintToAlbum != null) {
+            android.util.Log.d("PlaybackFragment", "为返回专辑按钮设置监听器");
+            ivHintToAlbum.setOnClickListener(v -> {
+                android.util.Log.d("PlaybackFragment", "点击返回专辑提示按钮");
+                if (isShowingLyrics) {
+                    toggleLyricsView(false);
+                }
+            });
+
+            // 确保按钮在歌词模式下可见
+            if (isShowingLyrics) {
+                ivHintToAlbum.setVisibility(View.VISIBLE);
+                ivHintToAlbum.setAlpha(0.7f);
+            } else {
+                ivHintToAlbum.setVisibility(View.GONE);
+            }
+        } else {
+            android.util.Log.e("PlaybackFragment", "ensureDoubleTapListenerSetup: 返回专辑按钮为null");
+        }
+    }
+
+    /**
+     * 设置备选的返回专辑视图方法
+     */
+    private void setupFallbackReturnMethod() {
+        android.util.Log.d("PlaybackFragment", "设置备选返回专辑视图方法");
+
+        // 为歌词卡片设置点击监听器
+        if (lyricsCard != null) {
+            lyricsCard.setOnClickListener(v -> {
+                // 计算距离上次点击的时间间隔
+                long clickTime = System.currentTimeMillis();
+                if (clickTime - lastClickTime < 400) { // 400ms内的两次点击视为双击
+                    android.util.Log.d("PlaybackFragment", "检测到连续点击，返回专辑视图");
+                    if (isShowingLyrics) {
+                        toggleLyricsView(false);
+                    }
+                }
+                lastClickTime = clickTime;
+            });
+        }
+
+        // 为全屏歌词视图添加长按返回功能作为备选方案
+        if (lrcViewFullscreen != null) {
+            lrcViewFullscreen.setOnLongClickListener(v -> {
+                android.util.Log.d("PlaybackFragment", "检测到长按，返回专辑视图");
+                if (isShowingLyrics) {
+                    Toast.makeText(requireContext(), "长按返回专辑视图", Toast.LENGTH_SHORT).show();
+                    toggleLyricsView(false);
+                    return true;
+                }
+                return false;
+            });
         }
     }
 

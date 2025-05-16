@@ -4,7 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:background="@color/colorBackground"
     android:padding="16dp">
 
@@ -13,11 +12,11 @@
         android:id="@+id/toolbarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
-        app:layout_constraintTop_toTopOf="parent"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
             android:id="@+id/ibBack"
@@ -58,9 +57,9 @@
         app:cardBackgroundColor="@color/colorSurface"
         app:cardCornerRadius="16dp"
         app:cardElevation="4dp"
-        app:layout_constraintTop_toBottomOf="@+id/toolbarLayout"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbarLayout">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -94,7 +93,6 @@
                 tools:text="歌手名称" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
-
     <!-- 专辑封面和歌词切换容器 -->
     <androidx.cardview.widget.CardView
         android:id="@+id/albumLyricsContainer"
@@ -120,9 +118,9 @@
                 android:id="@+id/albumContainer"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackground"
                 android:clickable="true"
-                android:focusable="true"
-                android:background="?android:attr/selectableItemBackground">
+                android:focusable="true">
 
                 <!-- 专辑封面图像 -->
                 <ImageView
@@ -137,35 +135,64 @@
                     app:layout_constraintTop_toTopOf="parent"
                     tools:src="@drawable/default_album" />
             </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <!-- 歌词显示区域 -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/lyricsCard"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone"
-                android:background="@color/colorSurface"
-                android:clickable="true"
-                android:focusable="true">
-
-                <!-- 自定义歌词视图 -->
-                <com.mlinyun.mymusicplayer.view.LrcView
-                    android:id="@+id/lrcViewFullscreen"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:padding="16dp"
-                    app:normalTextColor="@color/colorLrcNormal"
-                    app:highlightTextColor="@color/colorLrcHighlight"
-                    app:normalTextSize="16sp"
-                    app:highlightTextSize="18sp"
-                    app:lineSpacing="24dp"
-                    app:emptyLrcText="暂无歌词"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
         </FrameLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- 全屏歌词显示区域 -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/lyricsCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/seekBarLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/songInfoLayout">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorSurface"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackground">
+
+            <!-- 自定义歌词视图 -->
+            <com.mlinyun.mymusicplayer.view.LrcView
+                android:id="@+id/lrcViewFullscreen"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:padding="16dp"
+                app:emptyLrcText="暂无歌词"
+                app:highlightTextColor="@color/colorLrcHighlight"
+                app:highlightTextSize="18sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:lineSpacing="24dp"
+                app:normalTextColor="@color/colorLrcNormal"
+                app:normalTextSize="16sp" />
+
+            <!-- 添加一个浮动提示返回专辑的图标 -->
+            <ImageView
+                android:id="@+id/ivHintToAlbum"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_margin="16dp"
+                android:alpha="0.5"
+                android:background="@drawable/play_button_background"
+                android:contentDescription="点击返回专辑"
+                android:padding="6dp"
+                android:src="@drawable/ic_arrow_down"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/colorTextSecondary" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
 
     <!-- 小型歌词预览区域 -->
@@ -187,12 +214,12 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="8dp"
-            app:normalTextColor="@color/colorLrcNormal"
+            app:emptyLrcText="暂无歌词"
             app:highlightTextColor="@color/colorLrcHighlight"
-            app:normalTextSize="14sp"
             app:highlightTextSize="16sp"
             app:lineSpacing="24dp"
-            app:emptyLrcText="暂无歌词" />
+            app:normalTextColor="@color/colorLrcNormal"
+            app:normalTextSize="14sp" />
     </androidx.cardview.widget.CardView>
 
     <!-- 进度条 -->
