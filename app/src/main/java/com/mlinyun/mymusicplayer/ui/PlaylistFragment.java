@@ -12,7 +12,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
@@ -337,8 +336,17 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
      */
     @Override
     public void onSongClick(int position, Song song) {
-        // 播放选择的歌曲
+        // 检查是否为搜索结果中的歌曲
+        String searchQuery = etSearch.getText().toString().trim();
+        boolean isFromSearch = !searchQuery.isEmpty();
+
+        // 播放选择的歌曲，确保添加到实际的播放列表中
         viewModel.playSong(song);
+
+        // 如果是搜索结果中的歌曲，显示提示信息
+        if (isFromSearch) {
+            Toast.makeText(requireContext(), "已添加到播放列表: " + song.getTitle(), Toast.LENGTH_SHORT).show();
+        }
 
         // 跳转到播放页面
         if (getActivity() instanceof MainActivity) {

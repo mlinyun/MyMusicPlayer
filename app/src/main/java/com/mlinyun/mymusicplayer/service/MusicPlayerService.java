@@ -631,6 +631,10 @@ public class MusicPlayerService extends Service implements ServiceCallback {
             case LOOP:
                 nextPosition = (currentPosition + 1) % playlist.size();
                 break;
+            case SINGLE_LOOP:
+                // 单曲循环模式下，仍然允许用户手动切换到下一首
+                nextPosition = (currentPosition + 1) % playlist.size();
+                break;
             default: // SEQUENCE
                 nextPosition = currentPosition + 1;
                 if (nextPosition >= playlist.size()) {
@@ -654,8 +658,13 @@ public class MusicPlayerService extends Service implements ServiceCallback {
     public void playPrevious() {
         if (playlist.isEmpty()) return;
 
-        // 如果当前播放进度超过3秒，从头开始播放，否则播放前一首
-        if (musicPlayerManager.getCurrentPosition() > 3000) {
+        // 安全检查：如果错误计数已经达到最大值，不要继续尝试播放
+        if (errorCounter >= MAX_ERROR_COUNT) {
+            return;
+        }
+
+        // 当处于单曲循环模式并且不是从头开始时，只重置当前歌曲到开始位置
+        if (playMode == PlayMode.SINGLE_LOOP && musicPlayerManager.getCurrentPosition() > 3000) {
             musicPlayerManager.seekTo(0);
             return;
         }
@@ -667,6 +676,10 @@ public class MusicPlayerService extends Service implements ServiceCallback {
                 prevPosition = random.nextInt(playlist.size());
                 break;
             case LOOP:
+                prevPosition = (currentPosition - 1 + playlist.size()) % playlist.size();
+                break;
+            case SINGLE_LOOP:
+                // 单曲循环模式下，仍然允许用户手动切换到上一首
                 prevPosition = (currentPosition - 1 + playlist.size()) % playlist.size();
                 break;
             default: // SEQUENCE
@@ -960,15 +973,31 @@ public class MusicPlayerService extends Service implements ServiceCallback {
         switch (playMode) {
             case SINGLE_LOOP:
                 // 单曲循环，重新播放当前歌曲
+                musicPlayerManager.seekTo(0);
+                play();
+                break;
+            case LOOP:
+                // 列表循环，播放下一首
+                currentPosition = (currentPosition + 1) % playlist.size();
                 play();
                 break;
             case SHUFFLE:
-            case LOOP:
+                // 随机播放，随机选择下一首
+                Random random = new Random();
+                currentPosition = random.nextInt(playlist.size());
+                play();
+                break;
             case SEQUENCE:
             default:
-                // 其他模式，播放下一首
-                playNext();
+                // 顺序播放，播放下一首，如果已经是最后一首则循环到第一首
+                currentPosition = (currentPosition + 1) % playlist.size();
+                play();
                 break;
+        }
+
+        // 通知回调
+        for (PlayerCallback callback : callbacks) {
+            callback.onSongChanged(getCurrentSong());
         }
     }
 
