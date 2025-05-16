@@ -7,6 +7,7 @@ import android.net.Uri;
  * 用于存储和管理音乐文件的元数据信息
  */
 public class Song {
+
     // 歌曲唯一标识符
     private String id;
 
@@ -27,6 +28,9 @@ public class Song {
 
     // 专辑封面图片Uri
     private Uri albumArtUri;
+
+    // 标记是否为搜索结果，区分已加入播放列表和搜索结果
+    private boolean isSearchResult = false;
 
     /**
      * 构造函数
@@ -113,6 +117,14 @@ public class Song {
         this.albumArtUri = albumArtUri;
     }
 
+    public boolean isSearchResult() {
+        return isSearchResult;
+    }
+
+    public void setSearchResult(boolean searchResult) {
+        isSearchResult = searchResult;
+    }
+
     /**
      * 获取格式化的时间字符串(分:秒)
      *
@@ -123,6 +135,32 @@ public class Song {
         long minutes = seconds / 60;
         seconds = seconds % 60;
         return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    /**
+     * 判断专辑封面是否是从本地文件加载的
+     *
+     * @return 如果是本地文件则返回true，否则返回false
+     */
+    public boolean isLocalAlbumArt() {
+        if (albumArtUri == null) {
+            return false;
+        }
+
+        String scheme = albumArtUri.getScheme();
+        return "file".equals(scheme);
+    }
+
+    /**
+     * 获取专辑封面的文件路径（仅当是本地文件时有效）
+     *
+     * @return 专辑封面文件路径，如果不是本地文件则返回null
+     */
+    public String getAlbumArtPath() {
+        if (isLocalAlbumArt()) {
+            return albumArtUri.getPath();
+        }
+        return null;
     }
 
     @Override

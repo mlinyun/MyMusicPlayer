@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="@string/now_playing"
+            android:text="@string/now_playing_title"
             android:textColor="@color/colorText"
             android:textSize="16sp" />
 

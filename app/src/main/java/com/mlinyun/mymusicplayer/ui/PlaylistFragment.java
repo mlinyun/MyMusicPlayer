@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
@@ -337,15 +338,33 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
     @Override
     public void onSongClick(int position, Song song) {
         // 检查是否为搜索结果中的歌曲
-        String searchQuery = etSearch.getText().toString().trim();
-        boolean isFromSearch = !searchQuery.isEmpty();
+        if (song.isSearchResult()) {
+            // 搜索结果点击 - 将歌曲添加到播放列表并播放
+            // 创建非搜索结果版本的歌曲
+            Song playlistSong = new Song(
+                    song.getId(), song.getTitle(), song.getArtist(),
+                    song.getAlbum(), song.getDuration(), song.getPath(),
+                    song.getAlbumArtUri()
+            );
+            // 确保设置为非搜索结果
+            playlistSong.setSearchResult(false);
 
-        // 播放选择的歌曲，确保添加到实际的播放列表中
-        viewModel.playSong(song);
+            // 添加到播放列表并播放
+            viewModel.addSongAndPlay(playlistSong);
 
-        // 如果是搜索结果中的歌曲，显示提示信息
-        if (isFromSearch) {
-            Toast.makeText(requireContext(), "已添加到播放列表: " + song.getTitle(), Toast.LENGTH_SHORT).show();
+            // 显示添加到播放列表的提示信息
+            Toast.makeText(requireContext(), getString(R.string.added_to_playlist, song.getTitle()), Toast.LENGTH_SHORT).show();
+
+            // 清空搜索框，以便用户可以看到更新后的播放列表
+            if (viewModel.getFilteredSongs().getValue() != null &&
+                    viewModel.getFilteredSongs().getValue().size() <= 1) {
+                etSearch.setText("");
+            }
+        } else {            // 播放列表中的歌曲 - 直接播放
+            viewModel.playSong(song);
+
+            // 显示正在播放的提示信息
+            Toast.makeText(requireContext(), getString(R.string.now_playing_song, song.getTitle()), Toast.LENGTH_SHORT).show();
         }
 
         // 跳转到播放页面

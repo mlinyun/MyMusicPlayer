@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -25,6 +26,8 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.mlinyun.mymusicplayer.R;
 import com.mlinyun.mymusicplayer.adapter.MainPagerAdapter;
@@ -33,18 +36,28 @@ import com.mlinyun.mymusicplayer.player.PlayerState;
 import com.mlinyun.mymusicplayer.service.MusicPlayerService;
 import com.mlinyun.mymusicplayer.viewmodel.PlayerViewModel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 主活动类
  * 应用入口，负责导航和底部迷你播放器
  */
 public class MainActivity extends AppCompatActivity {
 
+    // 标签常量
+    private static final String TAG = "MainActivity";
+
+    // 当前页面位置
+    private int currentPagePosition = 0;
+
     // 权限请求码
     private static final int REQUEST_PERMISSION_CODE = 100;
+
     // UI组件
     private ViewPager2 viewPager;
     private BottomNavigationView bottomNav;
-    private androidx.cardview.widget.CardView miniPlayerContainer;
+    private CardView miniPlayerContainer;
     private ImageView ivMiniAlbumArt;
     private TextView tvMiniTitle;
     private TextView tvMiniArtist;
@@ -53,9 +66,6 @@ public class MainActivity extends AppCompatActivity {
 
     // ViewModel
     private PlayerViewModel viewModel;
-
-    // 当前页面位置
-    private int currentPagePosition = 0;
 
     /**
      * 活动创建时调用
@@ -113,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 禁用ViewPager2的滑动
         viewPager.setUserInputEnabled(false);
+
         // 设置底部导航监听器
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -135,7 +146,9 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
             return false;
-        });// 设置ViewPager页面切换监听器
+        });
+
+        // 设置ViewPager页面切换监听器
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -216,16 +229,32 @@ public class MainActivity extends AppCompatActivity {
 
             // 加载专辑封面，确保使用默认图片
             if (song.getAlbumArtUri() != null) {
-                Glide.with(this)
-                        .load(song.getAlbumArtUri())
-                        .placeholder(R.drawable.default_album)
-                        .error(R.drawable.default_album)
+                RequestOptions options = new RequestOptions()
                         .centerCrop()
-                        .into(ivMiniAlbumArt);
+                        .placeholder(R.drawable.default_album)
+                        .error(R.drawable.default_album);
+
+                if (song.isLocalAlbumArt()) {
+                    // 本地文件使用file:///路径加载
+                    Glide.with(this)
+                            .load(song.getAlbumArtUri())
+                            .apply(options)
+                            .diskCacheStrategy(DiskCacheStrategy.NONE) // 不缓存到磁盘
+                            .skipMemoryCache(false) // 但使用内存缓存
+                            .into(ivMiniAlbumArt);
+                    Log.d(TAG, "迷你播放器使用本地专辑封面: " + song.getAlbumArtPath());
+                } else {
+                    // 媒体库封面
+                    Glide.with(this)
+                            .load(song.getAlbumArtUri())
+                            .apply(options)
+                            .into(ivMiniAlbumArt);
+                }
             } else {
                 // 没有专辑封面时使用默认图片
                 ivMiniAlbumArt.setImageResource(R.drawable.default_album);
             }
+
             // 使迷你播放器封面可点击，点击后切换到播放界面
             ivMiniAlbumArt.setOnClickListener(v -> {
                 navigateToPlayback();
@@ -247,25 +276,47 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 检查并请求权限
+     * 检查并请求必要的权限
      * 公开此方法，使Fragment可以调用
      */
     public void checkAndRequestPermissions() {
-        String[] permissions = getRequiredPermissions();
+        // 需要请求的权限列表
+        List<String> permissionsNeeded = new ArrayList<>();
 
-        boolean allPermissionsGranted = true;
-        for (String permission : permissions) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                allPermissionsGranted = false;
-                break;
+        // 检查存储权限
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13及以上版本使用细化的媒体权限
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.READ_MEDIA_AUDIO);
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.READ_MEDIA_IMAGES);
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11和12使用READ_MEDIA_AUDIO权限
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.READ_MEDIA_AUDIO);
+            }
+        } else {
+            // Android 10及以下版本使用READ_EXTERNAL_STORAGE权限
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
             }
         }
 
-        if (allPermissionsGranted) {
-            // 已有权限，初始化音乐扫描
-            initMusicScan();
-        } else {
-            // 请求权限前，先检查是否需要显示权限解释
+        // 如果需要请求权限
+        if (!permissionsNeeded.isEmpty()) {
+            String[] permissions = permissionsNeeded.toArray(new String[0]);
+
+            // 检查是否需要显示权限解释
             boolean shouldShowRationale = false;
             for (String permission : permissions) {
                 if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
@@ -281,6 +332,9 @@ public class MainActivity extends AppCompatActivity {
                 // 直接请求权限
                 ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSION_CODE);
             }
+        } else {
+            // 已有权限，初始化音乐扫描
+            initMusicScan();
         }
     }
 
@@ -444,7 +498,9 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Android 13及以上需要READ_MEDIA_AUDIO权限
             return new String[]{
-                    Manifest.permission.READ_MEDIA_AUDIO
+                    Manifest.permission.READ_MEDIA_AUDIO,
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.POST_NOTIFICATIONS
             };
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Android 11及以上

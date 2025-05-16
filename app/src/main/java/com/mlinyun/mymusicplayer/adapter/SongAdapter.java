@@ -1,7 +1,9 @@
 package com.mlinyun.mymusicplayer.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,11 +11,17 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
 import com.mlinyun.mymusicplayer.R;
 import com.mlinyun.mymusicplayer.model.Song;
 
@@ -64,7 +72,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
      * 绑定ViewHolder数据
      */
     @Override
-    public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull SongViewHolder holder, @SuppressLint("RecyclerView") int position) {
         Song song = songs.get(position);
 
         // 设置歌曲信息
@@ -72,25 +80,78 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
         holder.artistTextView.setText(song.getArtist());
         holder.durationTextView.setText(formatDuration(song.getDuration()));
 
+        // 显示或隐藏搜索结果标识
+        if (song.isSearchResult()) {
+            holder.searchBadgeView.setVisibility(View.VISIBLE);
+            // 使用不同的背景颜色来突出显示搜索结果
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorSearchResult));
+        } else {
+            holder.searchBadgeView.setVisibility(View.GONE);
+            // 非搜索结果项使用透明背景
+            holder.itemView.setBackgroundColor(Color.TRANSPARENT);
+        }
         // 加载专辑封面
         if (song.getAlbumArtUri() != null) {
-            Glide.with(context)
-                    .load(song.getAlbumArtUri())
-                    .apply(RequestOptions.circleCropTransform())
+            // 根据URI类型使用不同的加载方式
+            RequestOptions options = new RequestOptions()
+                    .circleCropTransform()
                     .placeholder(R.drawable.default_album)
-                    .error(R.drawable.default_album)
-                    .into(holder.albumImageView);
+                    .error(R.drawable.default_album);
+            if (song.isLocalAlbumArt()) {
+                // 本地文件使用file:///路径加载
+                Glide.with(context)
+                        .load(song.getAlbumArtUri())
+                        .apply(options)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE) // 本地文件不缓存
+                        .skipMemoryCache(false) // 但可以使用内存缓存
+                        .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                            @Override
+                            public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model,
+                                                        com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                        boolean isFirstResource) {
+                                Log.e("SongAdapter", "本地专辑封面加载失败: " + e.getMessage());
+                                // 加载失败时，显示默认封面
+                                holder.albumImageView.setImageResource(R.drawable.default_album);
+                                return true;
+                            }
+
+                            @Override
+                            public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model,
+                                                           com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                           com.bumptech.glide.load.DataSource dataSource,
+                                                           boolean isFirstResource) {
+                                Log.d("SongAdapter", "本地专辑封面加载成功");
+                                return false;
+                            }
+                        })
+                        .into(holder.albumImageView);
+                Log.d("SongAdapter", "从本地加载专辑封面: " + song.getAlbumArtPath());
+            } else {
+                // 系统媒体库的封面通过content://加载
+                Glide.with(context)
+                        .load(song.getAlbumArtUri())
+                        .apply(options)
+                        .into(holder.albumImageView);
+            }
         } else {
             holder.albumImageView.setImageResource(R.drawable.default_album);
         }
 
-        // 设置当前播放歌曲的高亮效果
+        // 设置当前播放歌曲的高亮效果 - 优先级高于搜索结果
         if (position == currentPlayingPosition) {
+            // 设置当前播放歌曲的背景
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorHighlight));
             holder.nowPlayingIndicator.setVisibility(View.VISIBLE);
             holder.titleTextView.setTextColor(ContextCompat.getColor(context, R.color.colorAccent));
+            // 当前播放的歌曲如果是搜索结果，仍然显示搜索徽章
+            if (song.isSearchResult()) {
+                holder.searchBadgeView.setVisibility(View.VISIBLE);
+            }
         } else {
-            holder.itemView.setBackgroundColor(Color.TRANSPARENT);
+            // 非当前播放歌曲的背景
+            if (!song.isSearchResult()) {
+                holder.itemView.setBackgroundColor(Color.TRANSPARENT);
+            }
             holder.nowPlayingIndicator.setVisibility(View.GONE);
             holder.titleTextView.setTextColor(ContextCompat.getColor(context, R.color.colorText));
         }
@@ -224,6 +285,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
         TextView titleTextView;
         TextView artistTextView;
         TextView durationTextView;
+        TextView searchBadgeView;
 
         public SongViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -232,6 +294,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
             titleTextView = itemView.findViewById(R.id.tv_song_title);
             artistTextView = itemView.findViewById(R.id.tv_song_artist);
             durationTextView = itemView.findViewById(R.id.tv_song_duration);
+            searchBadgeView = itemView.findViewById(R.id.tv_search_badge);
         }
     }
 

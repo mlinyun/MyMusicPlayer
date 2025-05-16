@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="72dp"
     android:background="?attr/selectableItemBackground"
-    android:fitsSystemWindows="true"
     android:padding="8dp">
 
     <!-- 专辑封面 -->
@@ -47,11 +46,31 @@
         android:textColor="@color/colorText"
         android:textSize="16sp"
         app:layout_constraintBottom_toTopOf="@+id/tv_song_artist"
-        app:layout_constraintEnd_toStartOf="@+id/tv_song_duration"
+        app:layout_constraintEnd_toStartOf="@+id/tv_search_badge"
         app:layout_constraintStart_toEndOf="@+id/iv_album_art"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed"
         tools:text="歌曲名称" />
+
+    <!-- 搜索结果标识 -->
+    <TextView
+        android:id="@+id/tv_search_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/search_badge_background"
+        android:paddingStart="4dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="4dp"
+        android:paddingBottom="2dp"
+        android:text="@string/search_result_badge"
+        android:textColor="@android:color/white"
+        android:textSize="10sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_song_title"
+        app:layout_constraintEnd_toStartOf="@+id/tv_song_duration"
+        app:layout_constraintTop_toTopOf="@+id/tv_song_title"
+        tools:visibility="visible" />
 
     <!-- 歌手名称 -->
     <TextView

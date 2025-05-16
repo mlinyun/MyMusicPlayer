@@ -5,9 +5,8 @@
     <!-- 底部导航 -->
     <string name="nav_player">播放</string>
     <string name="nav_playlist">播放列表</string>
-
     <!-- 播放器界面 -->
-    <string name="now_playing">正在播放</string>
+    <string name="now_playing_title">正在播放</string>
     <string name="play_pause_description">播放/暂停</string>
     <string name="previous_description">上一首</string>
     <string name="next_description">下一首</string>
@@ -82,4 +81,8 @@
         <item>@string/sort_by_duration_asc</item>
         <item>@string/sort_by_duration_desc</item>
     </string-array>
+    <!-- 搜索结果和播放相关 -->
+    <string name="added_to_playlist">已添加到播放列表: %1$s</string>
+    <string name="now_playing_song">正在播放: %1$s</string>
+    <string name="search_result_badge">搜索结果</string>
 </resources>

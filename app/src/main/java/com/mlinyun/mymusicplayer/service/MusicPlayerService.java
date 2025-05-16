@@ -643,6 +643,11 @@ public class MusicPlayerService extends Service implements ServiceCallback {
                 break;
         }
 
+        // 额外的安全检查，确保位置有效
+        if (nextPosition < 0 || nextPosition >= playlist.size()) {
+            nextPosition = 0;
+        }
+
         currentPosition = nextPosition;
         play();
 
@@ -690,6 +695,12 @@ public class MusicPlayerService extends Service implements ServiceCallback {
                 break;
         }
 
+        // 额外的安全检查，确保位置有效
+        if (prevPosition < 0 || prevPosition >= playlist.size()) {
+            prevPosition = 0;
+        }
+
+        // 更新当前位置并播放
         currentPosition = prevPosition;
         play();
 
@@ -966,6 +977,11 @@ public class MusicPlayerService extends Service implements ServiceCallback {
 
     @Override
     public void onPlaybackCompleted() {
+        // 如果播放列表为空，不执行任何操作
+        if (playlist.isEmpty()) {
+            return;
+        }
+
         // 播放成功完成，重置错误计数器
         errorCounter = 0;
 
@@ -983,8 +999,17 @@ public class MusicPlayerService extends Service implements ServiceCallback {
                 break;
             case SHUFFLE:
                 // 随机播放，随机选择下一首
-                Random random = new Random();
-                currentPosition = random.nextInt(playlist.size());
+                if (playlist.size() > 1) {
+                    // 避免随机到相同的歌曲
+                    int oldPosition = currentPosition;
+                    Random random = new Random();
+                    do {
+                        currentPosition = random.nextInt(playlist.size());
+                    } while (currentPosition == oldPosition && playlist.size() > 1);
+                } else {
+                    // 只有一首歌曲时简单重播
+                    currentPosition = 0;
+                }
                 play();
                 break;
             case SEQUENCE:

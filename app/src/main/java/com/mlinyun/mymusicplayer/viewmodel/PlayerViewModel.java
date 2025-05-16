@@ -26,7 +26,9 @@ import com.mlinyun.mymusicplayer.service.MusicPlayerService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 音乐播放器的ViewModel类
@@ -453,14 +455,38 @@ public class PlayerViewModel extends AndroidViewModel {
 
         // 应用搜索过滤
         if (query == null || query.isEmpty()) {
+            // 非搜索模式，显示完整播放列表
             results.addAll(allSongs);
+            // 确保所有歌曲都没有搜索标记
+            for (Song song : results) {
+                song.setSearchResult(false);
+            }
         } else {
+            // 搜索模式，显示匹配的搜索结果
             query = query.toLowerCase();
+
+            // 首先从当前播放列表中查找匹配的歌曲
+            Set<String> addedSongIds = new HashSet<>();
             for (Song song : allSongs) {
                 if (song.getTitle().toLowerCase().contains(query)
                         || song.getArtist().toLowerCase().contains(query)
                         || song.getAlbum().toLowerCase().contains(query)) {
+                    // 当前播放列表中的歌曲不标记为搜索结果
+                    song.setSearchResult(false);
                     results.add(song);
+                    addedSongIds.add(song.getId());
+                }
+            }
+
+            // 然后查询本地存储中的其他匹配歌曲
+            List<Song> localSongs = songRepository.searchLocalSongs(query);
+            if (localSongs != null) {
+                for (Song song : localSongs) {
+                    // 避免添加已在播放列表中的歌曲
+                    if (!addedSongIds.contains(song.getId())) {
+                        song.setSearchResult(true);
+                        results.add(song);
+                    }
                 }
             }
         }
@@ -569,5 +595,43 @@ public class PlayerViewModel extends AndroidViewModel {
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
         return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    /**
+     * 添加歌曲到播放列表并立即播放
+     *
+     * @param song 要添加并播放的歌曲
+     */
+    public void addSongAndPlay(Song song) {
+        if (musicService != null && song != null) {
+            musicService.addSongAndPlay(song);
+        }
+    }
+
+    /**
+     * 处理专辑封面加载错误
+     * 尝试从其他来源重新获取专辑封面
+     *
+     * @param song 需要处理的歌曲
+     * @return 是否成功处理
+     */
+    public boolean handleAlbumArtLoadError(Song song) {
+        if (song == null) {
+            Log.e(TAG, "尝试处理专辑封面错误，但歌曲对象为null");
+            return false;
+        }
+
+        SongRepository songRepository = new SongRepository(getApplication());
+        android.net.Uri newUri = songRepository.handleAlbumArtLoadError(song);
+
+        if (newUri != null) {
+            Log.d(TAG, "成功处理专辑封面错误，使用新URI: " + newUri);
+            // 通知UI更新
+            currentSong.postValue(song);
+            return true;
+        } else {
+            Log.e(TAG, "无法处理专辑封面错误，将使用默认封面");
+            return false;
+        }
     }
 }

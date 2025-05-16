@@ -21,4 +21,7 @@
     <color name="colorControlNormal">#FFFFFF</color>
     <color name="colorControlActivated">#FF4081</color>
     <color name="colorControlHighlight">#1FFFFFFF</color>
+
+    <!-- 搜索结果颜色 -->
+    <color name="colorSearchResult">#1AFF4081</color>
 </resources>
