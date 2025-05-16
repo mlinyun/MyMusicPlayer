@@ -113,23 +113,29 @@ public class MainActivity extends AppCompatActivity {
 
         // 禁用ViewPager2的滑动
         viewPager.setUserInputEnabled(false);
-
         // 设置底部导航监听器
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.navigation_player) {
                 viewPager.setCurrentItem(0, false);
                 currentPagePosition = 0;
+                // 在播放页面隐藏迷你播放器
+                miniPlayerContainer.setVisibility(View.GONE);
                 return true;
             } else if (itemId == R.id.navigation_playlist) {
                 viewPager.setCurrentItem(1, false);
                 currentPagePosition = 1;
+                // 如果有歌曲正在播放，则在播放列表页面显示迷你播放器
+                Song currentSong = viewModel != null ? viewModel.getCurrentSong().getValue() : null;
+                if (currentSong != null) {
+                    miniPlayerContainer.setVisibility(View.VISIBLE);
+                    // 确保更新迷你播放器内容
+                    updateMiniPlayer(currentSong);
+                }
                 return true;
             }
             return false;
-        });
-
-        // 设置ViewPager页面切换监听器
+        });// 设置ViewPager页面切换监听器
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -137,8 +143,16 @@ public class MainActivity extends AppCompatActivity {
                 currentPagePosition = position;
                 if (position == 0) {
                     bottomNav.setSelectedItemId(R.id.navigation_player);
+                    miniPlayerContainer.setVisibility(View.GONE); // 在播放页面隐藏迷你播放器
                 } else if (position == 1) {
                     bottomNav.setSelectedItemId(R.id.navigation_playlist);
+                    // 如果有歌曲正在播放，则在播放列表页面显示迷你播放器
+                    Song currentSong = viewModel != null ? viewModel.getCurrentSong().getValue() : null;
+                    if (currentSong != null) {
+                        miniPlayerContainer.setVisibility(View.VISIBLE);
+                        // 确保更新迷你播放器内容
+                        updateMiniPlayer(currentSong);
+                    }
                 }
             }
         });
@@ -150,8 +164,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupMiniPlayer() {
         // 迷你播放器点击事件，切换到播放界面
         miniPlayerContainer.setOnClickListener(v -> {
-            viewPager.setCurrentItem(0, false);
-            bottomNav.setSelectedItemId(R.id.navigation_player);
+            navigateToPlayback();
         });
 
         // 播放/暂停按钮点击事件
@@ -163,6 +176,17 @@ public class MainActivity extends AppCompatActivity {
         ibMiniNext.setOnClickListener(v -> {
             viewModel.playNext();
         });
+    }
+
+    /**
+     * 导航到播放页面
+     * 公开此方法，使Fragment可以调用
+     */
+    public void navigateToPlayback() {
+        viewPager.setCurrentItem(0, false);
+        bottomNav.setSelectedItemId(R.id.navigation_player);
+        // 在播放页面隐藏迷你播放器
+        miniPlayerContainer.setVisibility(View.GONE);
     }
 
     /**
@@ -181,9 +205,14 @@ public class MainActivity extends AppCompatActivity {
      */
     private void updateMiniPlayer(Song song) {
         if (song != null) {
-            miniPlayerContainer.setVisibility(View.VISIBLE);
+            // 设置迷你播放器内容，无论显示与否都更新
             tvMiniTitle.setText(song.getTitle());
             tvMiniArtist.setText(song.getArtist());
+
+            // 只在播放列表页面显示迷你播放器
+            if (currentPagePosition == 1) {
+                miniPlayerContainer.setVisibility(View.VISIBLE);
+            }
 
             // 加载专辑封面，确保使用默认图片
             if (song.getAlbumArtUri() != null) {
@@ -197,11 +226,9 @@ public class MainActivity extends AppCompatActivity {
                 // 没有专辑封面时使用默认图片
                 ivMiniAlbumArt.setImageResource(R.drawable.default_album);
             }
-
             // 使迷你播放器封面可点击，点击后切换到播放界面
             ivMiniAlbumArt.setOnClickListener(v -> {
-                viewPager.setCurrentItem(0, false);
-                bottomNav.setSelectedItemId(R.id.navigation_player);
+                navigateToPlayback();
             });
         } else {
             miniPlayerContainer.setVisibility(View.GONE);

@@ -333,10 +333,17 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
 
     /**
      * 歌曲项点击事件处理
+     * 点击后播放歌曲并自动跳转到播放页面
      */
     @Override
     public void onSongClick(int position, Song song) {
+        // 播放选择的歌曲
         viewModel.playSong(song);
+
+        // 跳转到播放页面
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).navigateToPlayback();
+        }
     }
 
     /**
