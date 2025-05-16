@@ -1,18 +1,23 @@
 package com.mlinyun.mymusicplayer.ui;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -36,11 +41,10 @@ public class MainActivity extends AppCompatActivity {
 
     // 权限请求码
     private static final int REQUEST_PERMISSION_CODE = 100;
-
     // UI组件
     private ViewPager2 viewPager;
     private BottomNavigationView bottomNav;
-    private ConstraintLayout miniPlayerContainer;
+    private androidx.cardview.widget.CardView miniPlayerContainer;
     private ImageView ivMiniAlbumArt;
     private TextView tvMiniTitle;
     private TextView tvMiniArtist;
@@ -181,12 +185,24 @@ public class MainActivity extends AppCompatActivity {
             tvMiniTitle.setText(song.getTitle());
             tvMiniArtist.setText(song.getArtist());
 
-            // 加载专辑封面
+            // 加载专辑封面，确保使用默认图片
             if (song.getAlbumArtUri() != null) {
-                Glide.with(this).load(song.getAlbumArtUri()).placeholder(R.drawable.default_album).error(R.drawable.default_album).into(ivMiniAlbumArt);
+                Glide.with(this)
+                        .load(song.getAlbumArtUri())
+                        .placeholder(R.drawable.default_album)
+                        .error(R.drawable.default_album)
+                        .centerCrop()
+                        .into(ivMiniAlbumArt);
             } else {
+                // 没有专辑封面时使用默认图片
                 ivMiniAlbumArt.setImageResource(R.drawable.default_album);
             }
+
+            // 使迷你播放器封面可点击，点击后切换到播放界面
+            ivMiniAlbumArt.setOnClickListener(v -> {
+                viewPager.setCurrentItem(0, false);
+                bottomNav.setSelectedItemId(R.id.navigation_player);
+            });
         } else {
             miniPlayerContainer.setVisibility(View.GONE);
         }
@@ -287,7 +303,10 @@ public class MainActivity extends AppCompatActivity {
     private void showPermissionExplanationDialog() {
         // 使用自定义布局的对话框
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_permission_request, null);
-        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).setCancelable(false).create();
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
 
         // 设置授权按钮点击事件
         Button btnGrantPermission = dialogView.findViewById(R.id.btnGrantPermission);
@@ -307,7 +326,10 @@ public class MainActivity extends AppCompatActivity {
     private void showGoToSettingsDialog() {
         // 使用自定义布局的对话框
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_permission_request, null);
-        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).setCancelable(false).create();
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
 
         // 设置按钮文本和点击事件
         Button btnGrantPermission = dialogView.findViewById(R.id.btnGrantPermission);
@@ -394,13 +416,20 @@ public class MainActivity extends AppCompatActivity {
     private String[] getRequiredPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Android 13及以上需要READ_MEDIA_AUDIO权限
-            return new String[]{Manifest.permission.READ_MEDIA_AUDIO};
+            return new String[]{
+                    Manifest.permission.READ_MEDIA_AUDIO
+            };
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Android 11及以上
-            return new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+            return new String[]{
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+            };
         } else {
             // Android 10及以下
-            return new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            return new String[]{
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            };
         }
     }
 }

@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorBackground"
     android:fitsSystemWindows="true"
+    android:background="@color/colorBackground"
     tools:context=".ui.MainActivity">
 
     <!-- ViewPager2用于在播放和播放列表页面之间切换 -->
@@ -17,112 +17,129 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <!-- 迷你播放器，显示在底部 -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <androidx.cardview.widget.CardView
         android:id="@+id/miniPlayerContainer"
         android:layout_width="0dp"
-        android:layout_height="64dp"
-        android:background="@color/colorSurface"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
         android:elevation="8dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:cardBackgroundColor="@color/colorSurface"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="6dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         tools:visibility="visible">
 
-        <!-- 歌曲封面 -->
-        <ImageView
-            android:id="@+id/ivMiniAlbumArt"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:contentDescription="@string/album_art_description"
-            android:scaleType="centerCrop"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:src="@drawable/default_album" />
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp">
 
-        <!-- 歌曲信息 -->
-        <TextView
-            android:id="@+id/tvMiniTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/colorText"
-            android:textSize="14sp"
-            app:layout_constraintBottom_toTopOf="@+id/tvMiniArtist"
-            app:layout_constraintEnd_toStartOf="@+id/ibMiniPlayPause"
-            app:layout_constraintStart_toEndOf="@+id/ivMiniAlbumArt"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_chainStyle="packed"
-            tools:text="歌曲名称" />
+            <!-- 歌曲封面 -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardMiniAlbumArt"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/tvMiniArtist"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="12sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/ibMiniPlayPause"
-            app:layout_constraintStart_toEndOf="@+id/ivMiniAlbumArt"
-            app:layout_constraintTop_toBottomOf="@+id/tvMiniTitle"
-            tools:text="艺术家" />
+                <ImageView
+                    android:id="@+id/ivMiniAlbumArt"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/album_art_description"
+                    android:scaleType="centerCrop"
+                    tools:src="@drawable/default_album" />
+            </androidx.cardview.widget.CardView>
 
-        <!-- 播放/暂停按钮 -->
-        <ImageButton
-            android:id="@+id/ibMiniPlayPause"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/play_pause_description"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/ibMiniNext"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:src="@drawable/ic_play" />
+            <!-- 歌曲信息 -->
+            <TextView
+                android:id="@+id/tvMiniTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/colorText"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toTopOf="@+id/tvMiniArtist"
+                app:layout_constraintEnd_toStartOf="@+id/ibMiniPlayPause"
+                app:layout_constraintStart_toEndOf="@+id/cardMiniAlbumArt"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_chainStyle="packed"
+                tools:text="歌曲名称" />
 
-        <!-- 下一首按钮 -->
-        <ImageButton
-            android:id="@+id/ibMiniNext"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/next_description"
-            android:src="@drawable/ic_next"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            <TextView
+                android:id="@+id/tvMiniArtist"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="12sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/ibMiniPlayPause"
+                app:layout_constraintStart_toEndOf="@+id/cardMiniAlbumArt"
+                app:layout_constraintTop_toBottomOf="@+id/tvMiniTitle"
+                tools:text="艺术家" />
+            <!-- 播放/暂停按钮 -->
+            <ImageButton
+                android:id="@+id/ibMiniPlayPause"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/play_pause_description"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/ibMiniNext"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:src="@drawable/ic_play" />              <!-- 下一首按钮 -->
+            <ImageButton
+                android:id="@+id/ibMiniNext"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/next_description"
+                android:src="@drawable/ic_next"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- 播放进度条 -->
-        <ProgressBar
-            android:id="@+id/pbMiniProgress"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="0dp"
-            android:layout_height="2dp"
-            android:progressTint="@color/colorProgress"
-            android:progressBackgroundTint="@color/colorProgressBackground"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
+            <!-- 播放进度条 -->
+            <ProgressBar
+                android:id="@+id/pbMiniProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="2dp"
+                android:progressBackgroundTint="@color/colorProgressBackground"
+                android:progressTint="@color/colorProgress"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
     <!-- 底部导航栏 -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/colorSurface"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/nav_background"
         app:itemIconTint="@color/colorControlNormal"
         app:itemTextColor="@color/colorControlNormal"
         app:layout_constraintBottom_toBottomOf="parent"

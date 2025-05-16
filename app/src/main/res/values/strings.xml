@@ -13,10 +13,11 @@
     <string name="next_description">下一首</string>
     <string name="album_art_description">专辑封面</string>
     <string name="play_mode_description">播放模式</string>
-    <string name="playlist_description">播放列表</string>
-    <string name="back_description">返回</string>
+    <string name="playlist_description">播放列表</string>    <string name="back_description">返回</string>
     <string name="menu_description">菜单</string>
     <string name="now_playing_indicator_description">正在播放指示器</string>
+    <string name="tap_to_show_lyrics">点击显示歌词</string>
+    <string name="back_to_album">返回专辑封面</string>
 
     <!-- 播放列表界面 -->
     <string name="playlist_title">播放列表</string>

@@ -45,7 +45,11 @@ public class PlaybackFragment extends Fragment {
     private ImageButton ibNext;
     private ImageButton ibPlayMode;
     private ImageButton ibPlaylist;
-    private LrcView lrcView;
+    private LrcView lrcView;    // 新增UI组件变量
+    private View albumContainer;
+    private View lyricsCard;
+    private LrcView lrcViewFullscreen;
+    private boolean isShowingLyrics = false;
 
     // ViewModel
     private PlayerViewModel viewModel;
@@ -61,8 +65,7 @@ public class PlaybackFragment extends Fragment {
      */
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_playback, container, false);
     }
 
@@ -106,10 +109,20 @@ public class PlaybackFragment extends Fragment {
         ibPlaylist = view.findViewById(R.id.ibPlaylist);
         lrcView = view.findViewById(R.id.lrcView);
 
+        // 初始化新增的UI组件
+        albumContainer = view.findViewById(R.id.albumContainer);
+        lyricsCard = view.findViewById(R.id.lyricsCard);
+        lrcViewFullscreen = view.findViewById(R.id.lrcViewFullscreen);
+
         // 设置默认状态
         tvCurrentTime.setText("00:00");
         tvTotalTime.setText("00:00");
         ibPlayPause.setImageResource(R.drawable.ic_play);
+
+        // 初始化专辑/歌词容器状态
+        albumContainer.setVisibility(View.VISIBLE);
+        lyricsCard.setVisibility(View.GONE);
+        isShowingLyrics = false;
     }
 
     /**
@@ -127,7 +140,6 @@ public class PlaybackFragment extends Fragment {
 
         // 播放模式按钮
         ibPlayMode.setOnClickListener(v -> viewModel.togglePlayMode());
-
         // 播放列表按钮
         ibPlaylist.setOnClickListener(v -> {
             // 切换到播放列表页面
@@ -135,6 +147,12 @@ public class PlaybackFragment extends Fragment {
                 ((MainActivity) getActivity()).navigateToPlaylist();
             }
         });
+
+        // 专辑封面点击显示歌词
+        albumContainer.setOnClickListener(v -> toggleLyricsView(true));
+
+        // 歌词视图点击返回专辑封面
+        lyricsCard.setOnClickListener(v -> toggleLyricsView(false));
 
         // 进度条监听
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -178,6 +196,75 @@ public class PlaybackFragment extends Fragment {
                 viewModel.seekTo((int) lrcLine.getTimeMs());
             }
         });
+    }
+
+    /**
+     * 切换歌词/专辑封面显示
+     *
+     * @param showLyrics 是否显示歌词
+     */
+    private void toggleLyricsView(boolean showLyrics) {
+        if (isShowingLyrics == showLyrics) return; // 避免重复切换
+
+        isShowingLyrics = showLyrics;
+
+        View lyricsContainer = requireView().findViewById(R.id.lyricsContainer);
+
+        if (showLyrics) {
+            // 设置歌词卡片初始状态
+            lyricsCard.setAlpha(0f);
+            lyricsCard.setVisibility(View.VISIBLE);
+
+            // 创建专辑淡出动画
+            albumContainer.animate().alpha(0f).setDuration(300).withEndAction(() -> {
+                albumContainer.setVisibility(View.GONE);
+                albumContainer.setAlpha(1f); // 重置透明度供下次使用
+            });
+
+            // 创建歌词淡入动画
+            lyricsCard.animate().alpha(1f).setDuration(300);
+
+            // 隐藏小型歌词预览
+            lyricsContainer.animate().alpha(0f).setDuration(300).withEndAction(() -> {
+                lyricsContainer.setVisibility(View.GONE);
+            });
+
+            // 同步歌词到全屏歌词视图
+            Lyrics lyrics = viewModel.getCurrentLyrics().getValue();
+            lrcViewFullscreen.setLyrics(lyrics);
+
+            // 同步当前播放进度
+            Integer position = viewModel.getPlaybackPosition().getValue();
+            if (position != null) {
+                lrcViewFullscreen.updateTime(position);
+            }
+
+            // 暂停专辑旋转动画
+            pauseAlbumRotation();
+        } else {
+            // 设置专辑容器初始状态
+            albumContainer.setAlpha(0f);
+            albumContainer.setVisibility(View.VISIBLE);
+
+            // 创建歌词淡出动画
+            lyricsCard.animate().alpha(0f).setDuration(300).withEndAction(() -> {
+                lyricsCard.setVisibility(View.GONE);
+                lyricsCard.setAlpha(1f); // 重置透明度供下次使用
+            });
+
+            // 创建专辑淡入动画
+            albumContainer.animate().alpha(1f).setDuration(300);
+
+            // 显示小型歌词预览
+            lyricsContainer.setVisibility(View.VISIBLE);
+            lyricsContainer.setAlpha(0f);
+            lyricsContainer.animate().alpha(1f).setDuration(300);
+
+            // 如果正在播放则恢复专辑旋转动画
+            if (viewModel.getPlayerState().getValue() == PlayerState.PLAYING) {
+                startAlbumRotation();
+            }
+        }
     }
 
     /**
@@ -231,16 +318,17 @@ public class PlaybackFragment extends Fragment {
         tvSongTitle.setText(song.getTitle());
         tvArtist.setText(song.getArtist());
 
-        // 加载专辑封面
+        // 加载专辑封面，确保使用默认图片
         if (song.getAlbumArtUri() != null) {
-            Glide.with(this)
-                    .load(song.getAlbumArtUri())
-                    .apply(RequestOptions.centerCropTransform())
-                    .placeholder(R.drawable.default_album)
-                    .error(R.drawable.default_album)
-                    .into(ivAlbumArt);
+            Glide.with(this).load(song.getAlbumArtUri()).apply(RequestOptions.centerCropTransform()).placeholder(R.drawable.default_album).error(R.drawable.default_album).into(ivAlbumArt);
         } else {
+            // 没有专辑封面时使用默认图片
             ivAlbumArt.setImageResource(R.drawable.default_album);
+        }
+
+        // 如果正在显示歌词，切换回专辑视图
+        if (isShowingLyrics) {
+            toggleLyricsView(false);
         }
     }
 
@@ -288,8 +376,13 @@ public class PlaybackFragment extends Fragment {
         // 更新时间文本
         tvCurrentTime.setText(viewModel.formatTime(position));
 
-        // 更新歌词
+        // 更新小型歌词视图
         lrcView.updateTime(position);
+
+        // 如果正在显示歌词全屏视图，同步更新
+        if (isShowingLyrics && lyricsCard.getVisibility() == View.VISIBLE) {
+            lrcViewFullscreen.updateTime(position);
+        }
     }
 
     /**
@@ -321,7 +414,13 @@ public class PlaybackFragment extends Fragment {
      * 更新歌词
      */
     private void updateLyrics(Lyrics lyrics) {
+        // 更新小视图歌词
         lrcView.setLyrics(lyrics);
+
+        // 如果正在显示歌词全屏视图，同步更新
+        if (isShowingLyrics && lyricsCard.getVisibility() == View.VISIBLE) {
+            lrcViewFullscreen.setLyrics(lyrics);
+        }
     }
 
     /**
