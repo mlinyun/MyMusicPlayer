@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:background="@color/colorBackground"
+    android:fitsSystemWindows="true"
     tools:context=".ui.MainActivity">
 
     <!-- ViewPager2用于在播放和播放列表页面之间切换 -->
@@ -37,15 +37,13 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="64dp">
-
-            <!-- 歌曲封面 -->
+            android:layout_height="64dp">            <!-- 歌曲封面（圆形） -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardMiniAlbumArt"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_marginStart="8dp"
-                app:cardCornerRadius="8dp"
+                app:cardCornerRadius="24dp"
                 app:cardElevation="4dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"

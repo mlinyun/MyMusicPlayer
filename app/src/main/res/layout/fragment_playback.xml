@@ -92,15 +92,14 @@
                 android:textSize="14sp"
                 tools:text="歌手名称" />
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
-    <!-- 专辑封面和歌词切换容器 -->
+    </androidx.cardview.widget.CardView>    <!-- 专辑封面和歌词切换容器（圆形） -->
     <androidx.cardview.widget.CardView
         android:id="@+id/albumLyricsContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
-        app:cardCornerRadius="16dp"
+        app:cardCornerRadius="1000dp"
         app:cardElevation="8dp"
         app:layout_constraintBottom_toTopOf="@+id/lyricsContainer"
         app:layout_constraintDimensionRatio="1:1"
@@ -128,6 +127,7 @@
                     android:layout_width="0dp"
                     android:layout_height="0dp"
                     android:contentDescription="@string/album_art_description"
+                    android:padding="0dp"
                     android:scaleType="centerCrop"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
