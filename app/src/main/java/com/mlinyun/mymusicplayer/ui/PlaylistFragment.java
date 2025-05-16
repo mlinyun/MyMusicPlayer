@@ -1,5 +1,8 @@
 package com.mlinyun.mymusicplayer.ui;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -9,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -16,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -96,6 +102,13 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
         tvSongsCount = view.findViewById(R.id.tvSongCount);
         fabAddMusic = view.findViewById(R.id.fabAddMusic);
         progressBar = view.findViewById(R.id.progressBar);
+        Button btnRequestPermission = view.findViewById(R.id.btnRequestPermission);
+        btnRequestPermission.setOnClickListener(v -> {
+            // 直接请求权限
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).checkAndRequestPermissions();
+            }
+        });
 
         // 设置RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -201,10 +214,63 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
      */
     private void setupScanButton() {
         fabAddMusic.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), R.string.scanning_music, Toast.LENGTH_SHORT).show();
-            progressBar.setVisibility(View.VISIBLE);
-            viewModel.scanMusic();
+            // 检查是否有存储权限
+            if (hasStoragePermission()) {
+                // 有权限，开始扫描音乐
+                Toast.makeText(requireContext(), R.string.scanning_music, Toast.LENGTH_SHORT).show();
+                progressBar.setVisibility(View.VISIBLE);
+                viewModel.scanMusic();
+            } else {
+                // 没有权限，显示权限请求对话框
+                showPermissionRequestDialog();
+            }
         });
+    }
+
+    /**
+     * 检查是否有存储权限
+     */
+    private boolean hasStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.READ_MEDIA_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED;
+        } else {
+            return ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    /**
+     * 显示权限请求对话框
+     */
+    private void showPermissionRequestDialog() {
+        // 使用自定义布局的对话框
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_permission_request, null);
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .setCancelable(true)
+                .create();
+
+        // 设置授权按钮点击事件
+        Button btnGrantPermission = dialogView.findViewById(R.id.btnGrantPermission);
+        btnGrantPermission.setOnClickListener(v -> {
+            // 请求权限，跳转到MainActivity处理权限请求
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).checkAndRequestPermissions();
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
     }
 
     /**
@@ -287,6 +353,10 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
     @Override
     public void onResume() {
         super.onResume();
-        viewModel.refreshSongsList();
+
+        // 只在有权限的情况下刷新歌曲列表
+        if (hasStoragePermission()) {
+            viewModel.refreshSongsList();
+        }
     }
 }

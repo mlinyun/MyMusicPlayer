@@ -48,13 +48,14 @@
     <string name="dialog_delete_title">删除歌曲</string>
     <string name="dialog_delete_message">确定要从播放列表中移除这首歌曲吗？</string>
     <string name="dialog_button_cancel">取消</string>
-    <string name="dialog_button_delete">删除</string>
-
-    <!-- 权限相关 -->
-    <string name="permission_required">需要权限</string>
-    <string name="storage_permission_message">应用需要存储权限来访问音乐文件</string>
+    <string name="dialog_button_delete">删除</string>    <!-- 权限相关 -->
+    <string name="permission_required">需要存储权限</string>
+    <string name="storage_permission_message">我的音乐播放器需要访问您设备上的音乐文件。\n\n请授予存储权限，以便我们可以扫描并播放您的音乐。</string>
     <string name="permission_button_grant">授予权限</string>
     <string name="permission_button_settings">打开设置</string>
+    <string name="request_permission">请求存储权限</string>
+    <string name="permission_granted">已获得权限，正在扫描音乐...</string>
+    <string name="permission_denied">未获得权限，无法访问音乐文件</string>
 
     <!-- 通知相关 -->
     <string name="notification_channel_name">音乐播放通知</string>

@@ -18,7 +18,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:title="@string/playlist_title"
         app:titleTextColor="@color/colorText" />
-    
+
     <!-- 搜索框 -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/searchLayout"
@@ -48,7 +48,7 @@
             android:textColor="@color/colorText"
             android:imeOptions="actionSearch" />
     </com.google.android.material.textfield.TextInputLayout>
-    
+
     <!-- 排序控件 -->
     <LinearLayout
         android:id="@+id/sortLayout"
@@ -92,7 +92,7 @@
             android:textSize="14sp"
             tools:text="20 首歌曲" />
     </LinearLayout>
-    
+
     <!-- 播放列表 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSongs"
@@ -108,7 +108,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/sortLayout"
         tools:listitem="@layout/item_song" />
-    
+
     <!-- 空列表提示 -->
     <LinearLayout
         android:id="@+id/emptyView"
@@ -137,18 +137,25 @@
             android:layout_marginTop="16dp"
             android:text="@string/no_songs_found"
             android:textColor="@color/colorTextSecondary"
-            android:textSize="16sp" />
+            android:textSize="16sp" />        <Button
+        android:id="@+id/btnScanMusic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/scan_music"
+        android:textColor="@color/colorText"
+        android:backgroundTint="@color/colorAccent" />
 
         <Button
-            android:id="@+id/btnScanMusic"
+            android:id="@+id/btnRequestPermission"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/scan_music"
+            android:layout_marginTop="8dp"
+            android:text="@string/request_permission"
             android:textColor="@color/colorText"
-            android:backgroundTint="@color/colorAccent" />
+            android:backgroundTint="@color/colorPrimary" />
     </LinearLayout>
-    
+
     <!-- 加载进度条 -->
     <ProgressBar
         android:id="@+id/progressBar"
@@ -159,7 +166,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-    
+
     <!-- 浮动操作按钮 -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddMusic"

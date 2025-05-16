@@ -1,18 +1,15 @@
 package com.mlinyun.mymusicplayer.ui;
 
 import android.Manifest;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -39,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 权限请求码
     private static final int REQUEST_PERMISSION_CODE = 100;
-    
+
     // UI组件
     private ViewPager2 viewPager;
     private BottomNavigationView bottomNav;
@@ -49,13 +46,13 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvMiniArtist;
     private ImageButton ibMiniPlayPause;
     private ImageButton ibMiniNext;
-    
+
     // ViewModel
     private PlayerViewModel viewModel;
-    
+
     // 当前页面位置
     private int currentPagePosition = 0;
-    
+
     /**
      * 活动创建时调用
      */
@@ -63,26 +60,26 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
+
         // 初始化UI组件
         initViews();
-        
+
         // 获取ViewModel
         viewModel = new ViewModelProvider(this).get(PlayerViewModel.class);
-        
+
         // 设置ViewPager和底部导航
         setupViewPagerAndNavigation();
-        
+
         // 设置迷你播放器
         setupMiniPlayer();
-        
+
         // 观察ViewModel数据变化
         observeViewModel();
-        
+
         // 检查并请求权限
         checkAndRequestPermissions();
     }
-    
+
     /**
      * 初始化UI组件
      */
@@ -96,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
         ibMiniPlayPause = findViewById(R.id.ibMiniPlayPause);
         ibMiniNext = findViewById(R.id.ibMiniNext);
     }
-    
+
     /**
      * 设置ViewPager和底部导航
      */
@@ -104,10 +101,10 @@ public class MainActivity extends AppCompatActivity {
         // 创建适配器
         MainPagerAdapter adapter = new MainPagerAdapter(this);
         viewPager.setAdapter(adapter);
-        
+
         // 禁用ViewPager2的滑动
         viewPager.setUserInputEnabled(false);
-        
+
         // 设置底部导航监听器
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -122,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-        
+
         // 设置ViewPager页面切换监听器
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
@@ -137,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    
+
     /**
      * 设置迷你播放器
      */
@@ -147,29 +144,29 @@ public class MainActivity extends AppCompatActivity {
             viewPager.setCurrentItem(0, false);
             bottomNav.setSelectedItemId(R.id.navigation_player);
         });
-        
+
         // 播放/暂停按钮点击事件
         ibMiniPlayPause.setOnClickListener(v -> {
             viewModel.togglePlayPause();
         });
-        
+
         // 下一首按钮点击事件
         ibMiniNext.setOnClickListener(v -> {
             viewModel.playNext();
         });
     }
-    
+
     /**
      * 观察ViewModel数据变化
      */
     private void observeViewModel() {
         // 观察当前歌曲
         viewModel.getCurrentSong().observe(this, this::updateMiniPlayer);
-        
+
         // 观察播放状态
         viewModel.getPlayerState().observe(this, this::updatePlayState);
     }
-    
+
     /**
      * 更新迷你播放器
      */
@@ -178,14 +175,10 @@ public class MainActivity extends AppCompatActivity {
             miniPlayerContainer.setVisibility(View.VISIBLE);
             tvMiniTitle.setText(song.getTitle());
             tvMiniArtist.setText(song.getArtist());
-            
+
             // 加载专辑封面
             if (song.getAlbumArtUri() != null) {
-                Glide.with(this)
-                        .load(song.getAlbumArtUri())
-                        .placeholder(R.drawable.default_album)
-                        .error(R.drawable.default_album)
-                        .into(ivMiniAlbumArt);
+                Glide.with(this).load(song.getAlbumArtUri()).placeholder(R.drawable.default_album).error(R.drawable.default_album).into(ivMiniAlbumArt);
             } else {
                 ivMiniAlbumArt.setImageResource(R.drawable.default_album);
             }
@@ -193,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
             miniPlayerContainer.setVisibility(View.GONE);
         }
     }
-    
+
     /**
      * 更新播放状态
      */
@@ -204,32 +197,14 @@ public class MainActivity extends AppCompatActivity {
             ibMiniPlayPause.setImageResource(R.drawable.ic_play);
         }
     }
-    
+
     /**
      * 检查并请求权限
+     * 公开此方法，使Fragment可以调用
      */
-    private void checkAndRequestPermissions() {
-        String[] permissions;
-        
-        // 根据Android版本确定需要请求的权限
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13及以上需要READ_MEDIA_AUDIO权限
-            permissions = new String[]{
-                    Manifest.permission.READ_MEDIA_AUDIO
-            };
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11及以上
-            permissions = new String[]{
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-            };
-        } else {
-            // Android 10及以下
-            permissions = new String[]{
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-            };
-        }
-        
+    public void checkAndRequestPermissions() {
+        String[] permissions = getRequiredPermissions();
+
         boolean allPermissionsGranted = true;
         for (String permission : permissions) {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
@@ -237,19 +212,37 @@ public class MainActivity extends AppCompatActivity {
                 break;
             }
         }
-        
-        if (!allPermissionsGranted) {
-            ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSION_CODE);
+
+        if (allPermissionsGranted) {
+            // 已有权限，初始化音乐扫描
+            initMusicScan();
+        } else {
+            // 请求权限前，先检查是否需要显示权限解释
+            boolean shouldShowRationale = false;
+            for (String permission : permissions) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
+                    shouldShowRationale = true;
+                    break;
+                }
+            }
+
+            if (shouldShowRationale) {
+                // 显示权限解释对话框
+                showPermissionExplanationDialog();
+            } else {
+                // 直接请求权限
+                ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSION_CODE);
+            }
         }
     }
-    
+
     /**
      * 权限请求结果处理
      */
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        
+
         if (requestCode == REQUEST_PERMISSION_CODE) {
             boolean allGranted = true;
             for (int result : grantResults) {
@@ -258,13 +251,87 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 }
             }
-            
+
             if (!allGranted) {
-                Toast.makeText(this, R.string.storage_permission_message, Toast.LENGTH_SHORT).show();
+                // 检查是否勾选了"不再询问"
+                boolean showRationale = false;
+                for (String permission : permissions) {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
+                        showRationale = true;
+                        break;
+                    }
+                }
+
+                if (showRationale) {
+                    // 用户拒绝了权限，但没有勾选"不再询问"，显示对话框解释原因
+                    showPermissionExplanationDialog();
+                } else {
+                    // 用户拒绝了权限，且勾选了"不再询问"，显示对话框引导用户去设置中开启权限
+                    showGoToSettingsDialog();
+                }
+            } else {
+                // 权限已授予，初始化音乐扫描
+                initMusicScan();
             }
         }
     }
-    
+
+    /**
+     * 显示权限解释对话框
+     */
+    private void showPermissionExplanationDialog() {
+        // 使用自定义布局的对话框
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_permission_request, null);
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).setCancelable(false).create();
+
+        // 设置授权按钮点击事件
+        Button btnGrantPermission = dialogView.findViewById(R.id.btnGrantPermission);
+        btnGrantPermission.setOnClickListener(v -> {
+            // 再次请求权限
+            String[] permissions = getRequiredPermissions();
+            ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSION_CODE);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * 显示前往设置的对话框
+     */
+    private void showGoToSettingsDialog() {
+        // 使用自定义布局的对话框
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_permission_request, null);
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).setCancelable(false).create();
+
+        // 设置按钮文本和点击事件
+        Button btnGrantPermission = dialogView.findViewById(R.id.btnGrantPermission);
+        btnGrantPermission.setText(R.string.permission_button_settings);
+        btnGrantPermission.setOnClickListener(v -> {
+            // 跳转到应用设置页面
+            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(android.net.Uri.fromParts("package", getPackageName(), null));
+            startActivity(intent);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * 权限获取后初始化音乐扫描
+     */
+    private void initMusicScan() {
+        // 权限已授予，初始化音乐扫描
+        if (viewModel != null) {
+            // 先从缓存中获取歌曲
+            viewModel.refreshSongsList();
+
+            // 如果是首次使用或需要更新，扫描媒体库获取最新歌曲
+            viewModel.scanMusic();
+        }
+    }
+
     /**
      * 导航到播放列表页面
      */
@@ -272,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setCurrentItem(1, false);
         bottomNav.setSelectedItemId(R.id.navigation_playlist);
     }
-    
+
     /**
      * 导航到播放页面
      */
@@ -280,12 +347,55 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setCurrentItem(0, false);
         bottomNav.setSelectedItemId(R.id.navigation_player);
     }
-    
+
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull android.view.MenuItem item) {
+        if (item.getItemId() == R.id.action_request_permission) {
+            // 请求权限
+            checkAndRequestPermissions();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * 活动恢复时调用
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // 从系统设置返回时重新检查权限
+        checkAndRequestPermissions();
+    }
+
     /**
      * 活动销毁时调用
      */
     @Override
     protected void onDestroy() {
         super.onDestroy();
+    }
+
+    /**
+     * 获取当前Android版本所需的权限
+     */
+    private String[] getRequiredPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13及以上需要READ_MEDIA_AUDIO权限
+            return new String[]{Manifest.permission.READ_MEDIA_AUDIO};
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11及以上
+            return new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+        } else {
+            // Android 10及以下
+            return new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        }
     }
 }
