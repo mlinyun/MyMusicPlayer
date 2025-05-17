@@ -24,4 +24,5 @@
 
     <!-- 搜索结果颜色 -->
     <color name="colorSearchResult">#1AFF4081</color>
+    <color name="colorInPlaylist">#1A4CAF50</color>
 </resources>

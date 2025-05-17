@@ -401,6 +401,15 @@ public class PlayerViewModel extends AndroidViewModel {
         return currentSongIndex;
     }
 
+    /**
+     * 获取搜索过滤器LiveData
+     *
+     * @return 搜索过滤器LiveData
+     */
+    public MutableLiveData<String> getSearchFilter() {
+        return searchFilter;
+    }
+
     public LiveData<PlayMode> getPlayMode() {
         return playMode;
     }
@@ -605,6 +614,31 @@ public class PlayerViewModel extends AndroidViewModel {
     public void addSongAndPlay(Song song) {
         if (musicService != null && song != null) {
             musicService.addSongAndPlay(song);
+        }
+    }
+
+    /**
+     * 仅添加歌曲到播放列表，不播放
+     *
+     * @param song 要添加的歌曲
+     */
+    public void addSong(Song song) {
+        if (musicService != null && song != null) {
+            // 先检查歌曲是否已经在播放列表中
+            boolean songExists = false;
+            List<Song> currentPlaylist = musicService.getPlaylist();
+
+            for (Song existingSong : currentPlaylist) {
+                if (existingSong.getId().equals(song.getId())) {
+                    songExists = true;
+                    break;
+                }
+            }
+
+            // 如果歌曲不在播放列表中，则添加
+            if (!songExists) {
+                musicService.addSong(song);
+            }
         }
     }
 

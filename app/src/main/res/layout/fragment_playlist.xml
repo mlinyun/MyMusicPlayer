@@ -4,7 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:background="@color/colorBackground">
 
     <!-- 顶部工具栏 -->
@@ -27,27 +26,27 @@
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:hint="@string/search_hint"
-        app:endIconMode="clear_text"
-        app:startIconDrawable="@drawable/ic_search"
         app:boxBackgroundColor="@color/colorSurface"
-        app:boxStrokeColor="@color/colorAccent"
-        app:hintTextColor="@color/colorTextSecondary"
         app:boxCornerRadiusBottomEnd="8dp"
         app:boxCornerRadiusBottomStart="8dp"
         app:boxCornerRadiusTopEnd="8dp"
         app:boxCornerRadiusTopStart="8dp"
+        app:boxStrokeColor="@color/colorAccent"
+        app:endIconMode="clear_text"
+        app:hintTextColor="@color/colorTextSecondary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar">
+        app:layout_constraintTop_toBottomOf="@+id/toolbar"
+        app:startIconDrawable="@drawable/ic_search">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etSearch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:imeOptions="actionSearch"
             android:inputType="text"
             android:maxLines="1"
-            android:textColor="@color/colorText"
-            android:imeOptions="actionSearch" />
+            android:textColor="@color/colorText" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- 排序控件 -->
@@ -93,8 +92,39 @@
             android:textSize="14sp"
             tools:text="20 首歌曲" />
     </LinearLayout>
-
     <!-- 播放列表 -->
+    <TextView
+        android:id="@+id/tvPlaylistHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/playlist_title"
+        android:textColor="@color/colorText"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/sortLayout" />
+
+    <TextView
+        android:id="@+id/tvSearchResultHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/local_music"
+        android:textColor="@color/colorText"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvPlaylistHeader" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSongs"
         android:layout_width="0dp"
@@ -107,7 +137,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sortLayout"
+        app:layout_constraintTop_toBottomOf="@+id/tvSearchResultHeader"
         tools:listitem="@layout/item_song" />
 
     <!-- 空列表提示 -->
@@ -138,23 +168,25 @@
             android:layout_marginTop="16dp"
             android:text="@string/no_songs_found"
             android:textColor="@color/colorTextSecondary"
-            android:textSize="16sp" />        <Button
-        android:id="@+id/btnScanMusic"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/scan_music"
-        android:textColor="@color/colorText"
-        android:backgroundTint="@color/colorAccent" />
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btnScanMusic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/colorAccent"
+            android:text="@string/scan_music"
+            android:textColor="@color/colorText" />
 
         <Button
             android:id="@+id/btnRequestPermission"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:backgroundTint="@color/colorPrimary"
             android:text="@string/request_permission"
-            android:textColor="@color/colorText"
-            android:backgroundTint="@color/colorPrimary" />
+            android:textColor="@color/colorText" />
     </LinearLayout>
 
     <!-- 加载进度条 -->

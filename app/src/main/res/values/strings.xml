@@ -12,12 +12,12 @@
     <string name="next_description">下一首</string>
     <string name="album_art_description">专辑封面</string>
     <string name="play_mode_description">播放模式</string>
-    <string name="playlist_description">播放列表</string>    <string name="back_description">返回</string>
+    <string name="playlist_description">播放列表</string>
+    <string name="back_description">返回</string>
     <string name="menu_description">菜单</string>
     <string name="now_playing_indicator_description">正在播放指示器</string>
     <string name="tap_to_show_lyrics">点击显示歌词</string>
     <string name="back_to_album">返回专辑封面</string>
-
     <!-- 播放列表界面 -->
     <string name="playlist_title">播放列表</string>
     <string name="search_hint">搜索歌曲、艺术家或专辑</string>
@@ -27,6 +27,7 @@
     <string name="scan_music">扫描音乐</string>
     <string name="no_songs_description">无歌曲图标</string>
     <string name="add_music_description">添加音乐</string>
+    <string name="in_playlist">已在队列</string>
 
     <!-- 播放模式 -->
     <string name="mode_sequence">顺序播放</string>
@@ -81,8 +82,11 @@
         <item>@string/sort_by_duration_asc</item>
         <item>@string/sort_by_duration_desc</item>
     </string-array>
+
     <!-- 搜索结果和播放相关 -->
     <string name="added_to_playlist">已添加到播放列表: %1$s</string>
     <string name="now_playing_song">正在播放: %1$s</string>
     <string name="search_result_badge">搜索结果</string>
+    <string name="add_to_playlist">添加到播放队列</string>
+    <string name="local_music">本地搜索结果</string>
 </resources>

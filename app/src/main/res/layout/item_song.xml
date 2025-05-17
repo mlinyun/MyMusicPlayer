@@ -87,9 +87,7 @@
         app:layout_constraintEnd_toStartOf="@+id/tv_song_duration"
         app:layout_constraintStart_toEndOf="@+id/iv_album_art"
         app:layout_constraintTop_toBottomOf="@+id/tv_song_title"
-        tools:text="歌手名称" />
-
-    <!-- 歌曲时长 -->
+        tools:text="歌手名称" />    <!-- 歌曲时长 -->
     <TextView
         android:id="@+id/tv_song_duration"
         android:layout_width="wrap_content"
@@ -100,5 +98,21 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="04:32" />
+
+    <!-- 添加到播放队列按钮 -->
+    <ImageButton
+        android:id="@+id/btn_add_to_playlist"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/add_to_playlist"
+        android:src="@drawable/ic_add"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/tv_song_duration"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/colorAccent"
+        tools:visibility="visible" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
