@@ -14,9 +14,9 @@ import android.util.Log;
 public class AudioFocusHandler implements AudioManager.OnAudioFocusChangeListener {
     private static final String TAG = "AudioFocusHandler";
 
-    private AudioManager audioManager;
+    private final AudioManager audioManager;
     private AudioFocusRequest audioFocusRequest;
-    private AudioFocusCallback callback;
+    private final AudioFocusCallback callback;
     private boolean hasAudioFocus = false;
     private boolean wasPlayingBeforeFocusLoss = false;
 

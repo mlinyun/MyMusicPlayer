@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -19,7 +20,7 @@ public class ExoPlayerImpl implements IPlayerEngine {
     private static final String TAG = "ExoPlayerImpl";
 
     private ExoPlayer exoPlayer;
-    private Context context;
+    private final Context context;
     private Uri currentUri;
 
     // 回调接口
@@ -28,7 +29,7 @@ public class ExoPlayerImpl implements IPlayerEngine {
     private OnPreparedListener onPreparedListener;
 
     // 用于延迟执行的Handler
-    private Handler handler;
+    private final Handler handler;
 
     // 播放状态追踪
     private boolean isPreparing = false;
@@ -92,7 +93,7 @@ public class ExoPlayerImpl implements IPlayerEngine {
                 }
 
                 @Override
-                public void onPlayerError(androidx.media3.common.PlaybackException error) {
+                public void onPlayerError(@NonNull androidx.media3.common.PlaybackException error) {
                     isPreparing = false;
 
                     Log.e(TAG, "ExoPlayer错误: " + error.getMessage() + ", 错误码: " + error.errorCode, error);

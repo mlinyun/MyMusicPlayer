@@ -126,7 +126,7 @@
                 android:id="@+id/pbMiniProgress"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="0dp"
-                android:layout_height="3dp"
+                android:layout_height="2dp"
                 android:max="100"
                 android:progress="0"
                 android:progressBackgroundTint="@color/colorProgressBackground"

@@ -479,22 +479,6 @@ public class MainActivity extends AppCompatActivity {
         bottomNav.setSelectedItemId(R.id.navigation_player);
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(android.view.Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull android.view.MenuItem item) {
-        if (item.getItemId() == R.id.action_request_permission) {
-            // 请求权限
-            checkAndRequestPermissions();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
     /**
      * 活动恢复时调用
      */
