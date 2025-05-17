@@ -26,6 +26,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.mlinyun.mymusicplayer.R;
 import com.mlinyun.mymusicplayer.adapter.MainPagerAdapter;
+import com.mlinyun.mymusicplayer.model.Lyrics;
 import com.mlinyun.mymusicplayer.model.Song;
 import com.mlinyun.mymusicplayer.player.PlayerState;
 import com.mlinyun.mymusicplayer.viewmodel.PlayerViewModel;
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView ivMiniAlbumArt;
     private TextView tvMiniTitle;
     private TextView tvMiniArtist;
+    private TextView tvMiniLyric; // 添加单行歌词显示
     private ImageButton ibMiniPlayPause;
     private ImageButton ibMiniNext;
     private android.widget.ProgressBar pbMiniProgress; // 添加迷你进度条控件
@@ -104,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
         ivMiniAlbumArt = findViewById(R.id.ivMiniAlbumArt);
         tvMiniTitle = findViewById(R.id.tvMiniTitle);
         tvMiniArtist = findViewById(R.id.tvMiniArtist);
+        tvMiniLyric = findViewById(R.id.tvMiniLyric); // 初始化单行歌词TextView
         ibMiniPlayPause = findViewById(R.id.ibMiniPlayPause);
         ibMiniNext = findViewById(R.id.ibMiniNext);
         pbMiniProgress = findViewById(R.id.pbMiniProgress); // 初始化迷你进度条
@@ -229,6 +232,24 @@ public class MainActivity extends AppCompatActivity {
             tvMiniTitle.setText(song.getTitle());
             tvMiniArtist.setText(song.getArtist());
 
+            // 根据播放状态设置显示内容
+            PlayerState state = viewModel.getPlayerState().getValue();
+            if (state == PlayerState.PLAYING) {
+                tvMiniTitle.setVisibility(View.GONE);
+                tvMiniArtist.setVisibility(View.GONE);
+                tvMiniLyric.setVisibility(View.VISIBLE);
+
+                // 获取当前播放位置对应的歌词
+                Integer position = viewModel.getPlaybackPosition().getValue();
+                if (position != null) {
+                    updateMiniLyric(position);
+                }
+            } else {
+                tvMiniTitle.setVisibility(View.VISIBLE);
+                tvMiniArtist.setVisibility(View.VISIBLE);
+                tvMiniLyric.setVisibility(View.GONE);
+            }
+
             // 只在播放列表页面显示迷你播放器
             if (currentPagePosition == 1) {
                 miniPlayerContainer.setVisibility(View.VISIBLE);
@@ -277,8 +298,24 @@ public class MainActivity extends AppCompatActivity {
     private void updatePlayState(PlayerState state) {
         if (state == PlayerState.PLAYING) {
             ibMiniPlayPause.setImageResource(R.drawable.ic_pause);
+
+            // 播放时显示歌词，隐藏歌曲信息
+            tvMiniTitle.setVisibility(View.GONE);
+            tvMiniArtist.setVisibility(View.GONE);
+            tvMiniLyric.setVisibility(View.VISIBLE);
+
+            // 获取当前播放位置对应的歌词
+            Integer position = viewModel.getPlaybackPosition().getValue();
+            if (position != null) {
+                updateMiniLyric(position);
+            }
         } else {
             ibMiniPlayPause.setImageResource(R.drawable.ic_play);
+
+            // 暂停时显示歌曲信息，隐藏歌词
+            tvMiniTitle.setVisibility(View.VISIBLE);
+            tvMiniArtist.setVisibility(View.VISIBLE);
+            tvMiniLyric.setVisibility(View.GONE);
         }
     }
 
@@ -290,11 +327,39 @@ public class MainActivity extends AppCompatActivity {
 
         // 获取总时长
         Integer duration = viewModel.getDuration().getValue();
-
         if (duration != null && duration > 0) {
             // 计算进度百分比
             int progress = (int) ((position * 100L) / duration);
             pbMiniProgress.setProgress(progress);
+
+            // 同时更新歌词
+            updateMiniLyric(position);
+        }
+    }
+
+    /**
+     * 更新迷你播放器的歌词
+     */
+    private void updateMiniLyric(int position) {
+        // 只有在播放状态时才更新歌词
+        if (viewModel.getPlayerState().getValue() != PlayerState.PLAYING) {
+            return;
+        }
+
+        // 获取当前歌词
+        Lyrics lyrics = viewModel.getCurrentLyrics().getValue();
+        if (lyrics == null || lyrics.getLyricLines().isEmpty()) {
+            tvMiniLyric.setText("暂无歌词");
+            return;
+        }
+
+        // 查找当前时间点对应的歌词行
+        String currentLyric = lyrics.getLyricForTime(position);
+        if (currentLyric != null && !currentLyric.isEmpty()) {
+            tvMiniLyric.setText(currentLyric);
+        } else {
+            // 如果当前没有匹配的歌词行，显示提示信息
+            tvMiniLyric.setText("正在播放...");
         }
     }
 

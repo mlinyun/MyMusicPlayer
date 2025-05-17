@@ -95,6 +95,25 @@
                 app:layout_constraintTop_toBottomOf="@+id/tvMiniTitle"
                 tools:text="艺术家" />
 
+            <!-- 单行歌词显示（播放时显示） -->
+            <TextView
+                android:id="@+id/tvMiniLyric"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:ellipsize="end"
+                android:gravity="center_vertical"
+                android:maxLines="1"
+                android:textColor="@color/colorLrcHighlight"
+                android:textSize="14sp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/ibMiniPlayPause"
+                app:layout_constraintStart_toEndOf="@+id/cardMiniAlbumArt"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:text="当前播放的歌词" />
+
             <!-- 播放/暂停按钮 -->
             <ImageButton
                 android:id="@+id/ibMiniPlayPause"
