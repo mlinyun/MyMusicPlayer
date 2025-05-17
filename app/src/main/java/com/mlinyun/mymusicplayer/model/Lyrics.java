@@ -28,7 +28,9 @@ public class Lyrics {
     private String album;
 
     // 歌词元数据，存储LRC文件中的标签信息
-    private Map<String, String> metadata;    /**
+    private final Map<String, String> metadata;
+
+    /**
      * 构造函数
      */
     public Lyrics() {
@@ -38,6 +40,7 @@ public class Lyrics {
 
     /**
      * 构造函数
+     *
      * @param songId 关联的歌曲ID
      */
     public Lyrics(String songId) {
@@ -48,6 +51,7 @@ public class Lyrics {
 
     /**
      * 添加一行歌词
+     *
      * @param line 歌词行对象
      */
     public void addLine(LyricLine line) {
@@ -71,6 +75,7 @@ public class Lyrics {
 
     /**
      * 根据时间戳查找对应的歌词行
+     *
      * @param timeMs 当前播放时间(毫秒)
      * @return 匹配的歌词行，如果没有匹配则返回null
      */
@@ -97,6 +102,7 @@ public class Lyrics {
 
     /**
      * 根据时间戳查找对应的歌词行索引
+     *
      * @param timeMs 当前播放时间(毫秒)
      * @return 匹配的歌词行索引，如果没有匹配则返回-1
      */
@@ -123,6 +129,7 @@ public class Lyrics {
 
     /**
      * 更新当前高亮的歌词行
+     *
      * @param currentTimeMs 当前播放时间(毫秒)
      */
     public void updateCurrentLine(long currentTimeMs) {
@@ -132,6 +139,34 @@ public class Lyrics {
                 lines.get(i).setCurrentLine(i == currentLineIndex);
             }
         }
+    }
+
+    /**
+     * 根据时间戳获取对应的歌词文本
+     *
+     * @param timeMs 当前播放时间(毫秒)
+     * @return 匹配的歌词文本，如果没有匹配则返回null
+     */
+    public String getLyricForTime(long timeMs) {
+        if (lines.isEmpty()) {
+            return null;
+        }
+
+        LyricLine line = getLineByTime(timeMs);
+        if (line != null) {
+            return line.getText();
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取歌词行列表
+     *
+     * @return 歌词行列表
+     */
+    public List<LyricLine> getLyricLines() {
+        return lines;
     }
 
     // Getter和Setter方法
@@ -178,6 +213,7 @@ public class Lyrics {
 
     /**
      * 检查歌词是否为空
+     *
      * @return 如果歌词行为空返回true，否则返回false
      */
     public boolean isEmpty() {
@@ -186,14 +222,17 @@ public class Lyrics {
 
     /**
      * 获取歌词行数
+     *
      * @return 歌词行数
-     */    public int size() {
+     */
+    public int size() {
         return lines.size();
     }
 
     /**
      * 添加元数据
-     * @param key 元数据键
+     *
+     * @param key   元数据键
      * @param value 元数据值
      */
     public void addMetadata(String key, String value) {
@@ -211,6 +250,7 @@ public class Lyrics {
 
     /**
      * 获取元数据
+     *
      * @param key 元数据键
      * @return 元数据值
      */
@@ -220,6 +260,7 @@ public class Lyrics {
 
     /**
      * 获取所有元数据键
+     *
      * @return 元数据键集合
      */
     public Set<String> getMetadataKeys() {

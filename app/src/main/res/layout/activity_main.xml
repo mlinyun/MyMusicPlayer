@@ -17,6 +17,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
     <!-- 迷你播放器，显示在底部 -->
     <androidx.cardview.widget.CardView
         android:id="@+id/miniPlayerContainer"
@@ -37,7 +38,8 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="64dp">            <!-- 歌曲封面（圆形） -->
+            android:layout_height="64dp">
+            <!-- 歌曲封面（圆形） -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardMiniAlbumArt"
                 android:layout_width="48dp"
@@ -92,6 +94,7 @@
                 app:layout_constraintStart_toEndOf="@+id/cardMiniAlbumArt"
                 app:layout_constraintTop_toBottomOf="@+id/tvMiniTitle"
                 tools:text="艺术家" />
+
             <!-- 播放/暂停按钮 -->
             <ImageButton
                 android:id="@+id/ibMiniPlayPause"
@@ -103,7 +106,9 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/ibMiniNext"
                 app:layout_constraintTop_toTopOf="parent"
-                tools:src="@drawable/ic_play" />              <!-- 下一首按钮 -->
+                tools:src="@drawable/ic_play" />
+
+            <!-- 下一首按钮 -->
             <ImageButton
                 android:id="@+id/ibMiniNext"
                 android:layout_width="40dp"
@@ -121,7 +126,9 @@
                 android:id="@+id/pbMiniProgress"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="0dp"
-                android:layout_height="2dp"
+                android:layout_height="3dp"
+                android:max="100"
+                android:progress="0"
                 android:progressBackgroundTint="@color/colorProgressBackground"
                 android:progressTint="@color/colorProgress"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -129,6 +136,7 @@
                 app:layout_constraintStart_toStartOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
+
     <!-- 底部导航栏 -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"

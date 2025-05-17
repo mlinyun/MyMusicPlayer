@@ -1,25 +1,20 @@
 package com.mlinyun.mymusicplayer.ui;
 
 import android.Manifest;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -33,7 +28,6 @@ import com.mlinyun.mymusicplayer.R;
 import com.mlinyun.mymusicplayer.adapter.MainPagerAdapter;
 import com.mlinyun.mymusicplayer.model.Song;
 import com.mlinyun.mymusicplayer.player.PlayerState;
-import com.mlinyun.mymusicplayer.service.MusicPlayerService;
 import com.mlinyun.mymusicplayer.viewmodel.PlayerViewModel;
 
 import java.util.ArrayList;
@@ -63,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvMiniArtist;
     private ImageButton ibMiniPlayPause;
     private ImageButton ibMiniNext;
+    private android.widget.ProgressBar pbMiniProgress; // 添加迷你进度条控件
 
     // ViewModel
     private PlayerViewModel viewModel;
@@ -111,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
         tvMiniArtist = findViewById(R.id.tvMiniArtist);
         ibMiniPlayPause = findViewById(R.id.ibMiniPlayPause);
         ibMiniNext = findViewById(R.id.ibMiniNext);
+        pbMiniProgress = findViewById(R.id.pbMiniProgress); // 初始化迷你进度条
     }
 
     /**
@@ -211,6 +207,17 @@ public class MainActivity extends AppCompatActivity {
 
         // 观察播放状态
         viewModel.getPlayerState().observe(this, this::updatePlayState);
+
+        // 观察播放进度
+        viewModel.getPlaybackPosition().observe(this, this::updatePlaybackProgress);
+
+        // 观察总时长
+        viewModel.getDuration().observe(this, duration -> {
+            // 当获取到总时长时，更新进度条的最大值
+            if (duration != null && duration > 0) {
+                pbMiniProgress.setMax(100);
+            }
+        });
     }
 
     /**
@@ -272,6 +279,22 @@ public class MainActivity extends AppCompatActivity {
             ibMiniPlayPause.setImageResource(R.drawable.ic_pause);
         } else {
             ibMiniPlayPause.setImageResource(R.drawable.ic_play);
+        }
+    }
+
+    /**
+     * 更新迷你播放器的播放进度
+     */
+    private void updatePlaybackProgress(Integer position) {
+        if (position == null) return;
+
+        // 获取总时长
+        Integer duration = viewModel.getDuration().getValue();
+
+        if (duration != null && duration > 0) {
+            // 计算进度百分比
+            int progress = (int) ((position * 100L) / duration);
+            pbMiniProgress.setProgress(progress);
         }
     }
 

@@ -22,12 +22,8 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
-import com.bumptech.glide.request.target.Target;
 import com.mlinyun.mymusicplayer.R;
 import com.mlinyun.mymusicplayer.model.Lyrics;
 import com.mlinyun.mymusicplayer.model.Song;
@@ -40,9 +36,9 @@ import com.mlinyun.mymusicplayer.viewmodel.PlayerViewModel;
  * 播放界面Fragment
  * 负责显示和控制当前播放歌曲的界面
  */
-public class PlaybackFragment extends Fragment {    // 标签常量
+public class PlaybackFragment extends Fragment {
+    // 标签常量
     private static final String TAG = "PlaybackFragment";
-
     // UI组件
     private ImageView ivAlbumArt;
     private TextView tvSongTitle;
@@ -55,12 +51,13 @@ public class PlaybackFragment extends Fragment {    // 标签常量
     private ImageButton ibNext;
     private ImageButton ibPlayMode;
     private ImageButton ibPlaylist;
-    private LrcView lrcView;    // 新增UI组件变量
+    private TextView tvCurrentLyric;
     private View albumContainer;
     private View lyricsCard;
     private LrcView lrcViewFullscreen;
+    private ImageView ivHintToAlbum;
     private boolean isShowingLyrics = false;
-    private ImageView ivHintToAlbum; // 返回专辑提示按钮
+
 
     // ViewModel
     private PlayerViewModel viewModel;
@@ -130,7 +127,7 @@ public class PlaybackFragment extends Fragment {    // 标签常量
         ibNext = view.findViewById(R.id.ibNext);
         ibPlayMode = view.findViewById(R.id.ibPlayMode);
         ibPlaylist = view.findViewById(R.id.ibPlaylist);
-        lrcView = view.findViewById(R.id.lrcView);        // 初始化新增的UI组件
+        tvCurrentLyric = view.findViewById(R.id.tvCurrentLyric);  // 替换为新的歌词文本视图
         albumContainer = view.findViewById(R.id.albumContainer);
         lyricsCard = view.findViewById(R.id.lyricsCard);
         lrcViewFullscreen = view.findViewById(R.id.lrcViewFullscreen);
@@ -274,18 +271,6 @@ public class PlaybackFragment extends Fragment {    // 标签常量
                     viewModel.seekTo(position);
                 }
                 isUserSeeking = false;
-            }
-        });        // 歌词点击监听
-        lrcView.setLrcViewListener(new LrcView.LrcViewListener() {
-            @Override
-            public void onLrcViewClick() {
-                // 可以在这里添加点击歌词的处理逻辑
-            }
-
-            @Override
-            public void onLrcLineTap(int line, com.mlinyun.mymusicplayer.model.LyricLine lrcLine) {
-                // 点击歌词行时跳转到对应时间点
-                viewModel.seekTo((int) lrcLine.getTimeMs());
             }
         });
 
@@ -561,7 +546,7 @@ public class PlaybackFragment extends Fragment {    // 标签常量
         tvCurrentTime.setText(viewModel.formatTime(position));
 
         // 更新小型歌词视图
-        lrcView.updateTime(position);
+        updateCurrentLyricText(position);
 
         // 如果正在显示歌词全屏视图，同步更新
         if (isShowingLyrics && lyricsCard.getVisibility() == View.VISIBLE) {
@@ -598,12 +583,38 @@ public class PlaybackFragment extends Fragment {    // 标签常量
      * 更新歌词
      */
     private void updateLyrics(Lyrics lyrics) {
-        // 更新小视图歌词
-        lrcView.setLyrics(lyrics);
+        // 更新小视图歌词文本
+        if (lyrics != null && viewModel.getPlaybackPosition().getValue() != null) {
+            updateCurrentLyricText(viewModel.getPlaybackPosition().getValue());
+        } else {
+            tvCurrentLyric.setText("暂无歌词");
+        }
 
         // 如果正在显示歌词全屏视图，同步更新
         if (isShowingLyrics && lyricsCard.getVisibility() == View.VISIBLE) {
             lrcViewFullscreen.setLyrics(lyrics);
+        }
+    }
+
+    /**
+     * 更新当前歌词文本
+     * 从歌词对象中获取当前时间点应该显示的歌词行
+     */
+    private void updateCurrentLyricText(int position) {
+        // 获取当前歌词
+        Lyrics lyrics = viewModel.getCurrentLyrics().getValue();
+        if (lyrics == null || lyrics.getLyricLines().isEmpty()) {
+            tvCurrentLyric.setText("暂无歌词");
+            return;
+        }
+
+        // 查找当前时间点对应的歌词行
+        String currentLyric = lyrics.getLyricForTime(position);
+        if (currentLyric != null && !currentLyric.isEmpty()) {
+            tvCurrentLyric.setText(currentLyric);
+        } else {
+            // 如果当前没有匹配的歌词行，显示提示信息
+            tvCurrentLyric.setText("正在播放...");
         }
     }
 

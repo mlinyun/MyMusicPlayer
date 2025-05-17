@@ -8,18 +8,18 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorSurface">@color/colorSurface</item>
         <item name="android:colorBackground">@color/colorBackground</item>
-        
+
         <!-- 文本颜色 -->
         <item name="android:textColorPrimary">@color/colorText</item>
         <item name="android:textColorSecondary">@color/colorTextSecondary</item>
-        
+
         <!-- 状态栏配置 -->
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:statusBarColor">@color/colorSurface</item>
-        
+
         <!-- 导航栏配置 -->
         <item name="android:navigationBarColor">@color/colorSurface</item>
-        
+
         <!-- 禁用默认ActionBar -->
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
@@ -43,7 +43,7 @@
         <item name="tint">@color/colorControlNormal</item>
         <item name="android:padding">8dp</item>
     </style>
-    
+
     <!-- 大按钮样式 -->
     <style name="PlayerButton.Large">
         <item name="android:padding">16dp</item>

@@ -62,9 +62,7 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_playlist, container, false);
-        initViews(view);
-        return view;
+        return inflater.inflate(R.layout.fragment_playlist, container, false);
     }
 
     /**
@@ -73,6 +71,9 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // 初始化UI组件
+        initViews(view);
 
         // 获取ViewModel
         viewModel = new ViewModelProvider(requireActivity()).get(PlayerViewModel.class);

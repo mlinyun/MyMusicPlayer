@@ -74,7 +74,8 @@ public class LyricLine {
         long totalSeconds = timeMs / 1000;
         long minutes = totalSeconds / 60;
         long seconds = totalSeconds % 60;
-        long millis = (timeMs % 1000) / 10; // LRC格式通常只精确到百分之一秒
+        long millis = (timeMs % 1000) / 10;
+        // LRC格式通常只精确到百分之一秒
         return String.format("[%02d:%02d.%02d]", minutes, seconds, millis);
     }
 

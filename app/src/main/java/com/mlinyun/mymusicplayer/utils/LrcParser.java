@@ -24,8 +24,8 @@ import java.util.regex.Pattern;
 public class LrcParser {
     private static final String TAG = "LrcParser";
 
-    // LRC时间标签正则表达式 格式: [mm:ss.xx] 例如: [00:12.34]
-    private static final Pattern TIME_PATTERN = Pattern.compile("\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})\\]");
+    // LRC时间标签正则表达式 格式: [mm:ss.xx] 例如: [00:12.34] 或 [01:22.770004]
+    private static final Pattern TIME_PATTERN = Pattern.compile("\\[(\\d{2}):(\\d{2})\\.(\\d+)\\]");
 
     // LRC元数据标签正则表达式 例如: [ar:艺术家]
     private static final Pattern METADATA_PATTERN = Pattern.compile("\\[(\\w+):(.+)\\]");
@@ -124,16 +124,20 @@ public class LrcParser {
             String text = rawLine;
 
             Matcher timeMatcher = TIME_PATTERN.matcher(rawLine);
-            while (timeMatcher.find()) {
-                // 提取时间标签
+            while (timeMatcher.find()) {                // 提取时间标签
                 int minute = Integer.parseInt(timeMatcher.group(1));
                 int second = Integer.parseInt(timeMatcher.group(2));
                 int millisecond;
                 String msStr = timeMatcher.group(3);
-                if (msStr.length() == 2) {
-                    millisecond = Integer.parseInt(msStr) * 10;
+
+                // 处理不同长度的毫秒格式
+                if (msStr.length() <= 3) {
+                    // 处理1-3位数的毫秒 (例如 [01:23.4], [01:23.45], [01:23.456])
+                    millisecond = Integer.parseInt(msStr) * (int) Math.pow(10, 3 - msStr.length());
                 } else {
-                    millisecond = Integer.parseInt(msStr);
+                    // 处理超过3位数的毫秒 (例如 [01:23.4567], [01:23.770004])
+                    // 截取前3位，如果需要可以四舍五入
+                    millisecond = Integer.parseInt(msStr.substring(0, 3));
                 }
 
                 long timeMs = minute * 60 * 1000 + second * 1000 + millisecond;
@@ -178,10 +182,15 @@ public class LrcParser {
                 int second = Integer.parseInt(matcher.group(2));
                 int millisecond;
                 String msStr = matcher.group(3);
-                if (msStr.length() == 2) {
-                    millisecond = Integer.parseInt(msStr) * 10;
+
+                // 处理不同长度的毫秒格式
+                if (msStr.length() <= 3) {
+                    // 处理1-3位数的毫秒 (例如 01:23.4, 01:23.45, 01:23.456)
+                    millisecond = Integer.parseInt(msStr) * (int) Math.pow(10, 3 - msStr.length());
                 } else {
-                    millisecond = Integer.parseInt(msStr);
+                    // 处理超过3位数的毫秒 (例如 01:23.4567, 01:23.770004)
+                    // 截取前3位，如果需要可以四舍五入
+                    millisecond = Integer.parseInt(msStr.substring(0, 3));
                 }
 
                 return minute * 60 * 1000 + second * 1000 + millisecond;

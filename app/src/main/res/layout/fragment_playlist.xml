@@ -92,6 +92,7 @@
             android:textSize="14sp"
             tools:text="20 首歌曲" />
     </LinearLayout>
+
     <!-- 播放列表 -->
     <TextView
         android:id="@+id/tvPlaylistHeader"
