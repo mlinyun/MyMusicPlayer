@@ -46,7 +46,9 @@
             android:src="@drawable/ic_close"
             app:tint="@color/colorControlNormal" />
 
-    </RelativeLayout>    <!-- 播放列表 RecyclerView -->
+    </RelativeLayout>
+
+    <!-- 播放列表 RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvQueueSongs"
         android:layout_width="match_parent"

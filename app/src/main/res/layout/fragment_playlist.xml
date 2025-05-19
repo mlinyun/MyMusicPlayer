@@ -6,18 +6,29 @@
     android:layout_height="match_parent"
     android:background="@color/colorBackground">
 
-    <!-- 顶部工具栏 -->
+    <!-- 界面标题 -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/colorSurface"
         android:elevation="4dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:title="@string/playlist_title"
-        app:titleTextColor="@color/colorText" />
+        app:titleTextColor="@color/colorText">
+
+        <!-- 居中标题 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="@string/playlist_title"
+            android:textColor="@color/colorText"
+            android:textSize="22sp" />
+    </androidx.appcompat.widget.Toolbar>
 
     <!-- 搜索框 -->
     <com.google.android.material.textfield.TextInputLayout
@@ -93,7 +104,6 @@
             tools:text="20 首歌曲" />
     </LinearLayout>
 
-    <!-- 播放列表 -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerContainer"
         android:layout_width="match_parent"
@@ -117,34 +127,6 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/btnPlayAll"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/play_all"
-            android:textColor="@color/colorAccent"
-            android:textSize="14sp"
-            app:icon="@drawable/ic_play"
-            app:iconTint="@color/colorAccent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/btnAddAll"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/btnAddAll"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/add_to_playlist"
-            android:textColor="@color/colorAccent"
-            android:textSize="14sp"
-            app:icon="@drawable/ic_add"
-            app:iconTint="@color/colorAccent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
@@ -163,6 +145,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/headerContainer" />
 
+    <!-- 我的音乐列表 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSongs"
         android:layout_width="0dp"

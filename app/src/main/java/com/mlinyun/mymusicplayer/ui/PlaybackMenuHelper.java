@@ -1,22 +1,8 @@
-// 添加转换正在播放的搜索结果到播放列表的方法
-// 这个方法用于将当前正在播放的搜索结果转换为播放列表歌曲
 package com.mlinyun.mymusicplayer.ui;
 
 import android.content.Context;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-
-import com.mlinyun.mymusicplayer.R;
 import com.mlinyun.mymusicplayer.model.Song;
 import com.mlinyun.mymusicplayer.viewmodel.PlayerViewModel;
 
@@ -67,7 +53,7 @@ public class PlaybackMenuHelper {
 
             // 显示添加成功的提示
             Toast.makeText(context,
-                    context.getString(R.string.added_to_playlist, currentSong.getTitle()),
+                    "已添加: " + currentSong.getTitle(),
                     Toast.LENGTH_SHORT).show();
             return true;
         } else {

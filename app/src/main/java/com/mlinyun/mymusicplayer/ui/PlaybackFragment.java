@@ -56,7 +56,7 @@ public class PlaybackFragment extends Fragment implements PlaylistBottomSheetDia
     private View lyricsCard;
     private LrcView lrcViewFullscreen;
     private ImageView ivHintToAlbum;
-    private TextView tvSearchIndicator; // 搜索结果指示器
+    // 已移除搜索结果指示器相关代码
     private boolean isShowingLyrics = false;
 
 
@@ -130,7 +130,9 @@ public class PlaybackFragment extends Fragment implements PlaylistBottomSheetDia
         lyricsCard = view.findViewById(R.id.lyricsCard);
         lrcViewFullscreen = view.findViewById(R.id.lrcViewFullscreen);
         ivHintToAlbum = view.findViewById(R.id.ivHintToAlbum);
-        tvSearchIndicator = view.findViewById(R.id.tvSearchIndicator); // 搜索结果指示器            // 如果当前找不到返回专辑按钮，做兼容处理
+        // 搜索结果指示器已移除
+
+        // 如果当前找不到返回专辑按钮，做兼容处理
         if (ivHintToAlbum == null) {
             android.util.Log.e("PlaybackFragment", "找不到返回专辑按钮(ID: ivHintToAlbum)");
         }
@@ -371,19 +373,11 @@ public class PlaybackFragment extends Fragment implements PlaylistBottomSheetDia
             tvSongTitle.setText("");
             tvArtist.setText("");
             ivAlbumArt.setImageResource(R.drawable.default_album);
-            tvSearchIndicator.setVisibility(View.GONE);
             return;
         }
 
         tvSongTitle.setText(song.getTitle());
         tvArtist.setText(song.getArtist());
-
-        // 更新搜索结果指示器
-        if (song.isSearchResult()) {
-            tvSearchIndicator.setVisibility(View.VISIBLE);
-        } else {
-            tvSearchIndicator.setVisibility(View.GONE);
-        }
 
         // 加载专辑封面，确保使用默认图片
         if (song.getAlbumArtUri() != null) {

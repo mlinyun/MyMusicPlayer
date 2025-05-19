@@ -189,11 +189,6 @@ public class PlaylistBottomSheetDialog extends BottomSheetDialogFragment impleme
                 Toast.LENGTH_SHORT).show();
     }
 
-    @Override
-    public void onAddToPlaylistClick(int position, Song song) {
-        // 在播放队列对话框中，不需要"添加到播放列表"功能
-    }
-
     /**
      * 回调接口，用于与宿主Fragment通信
      */

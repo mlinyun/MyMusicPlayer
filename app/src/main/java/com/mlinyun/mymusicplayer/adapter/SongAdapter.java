@@ -91,37 +91,14 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
                     break;
                 }
             }
-        }        // 显示或隐藏搜索结果标识
+        }          // 根据是否为搜索结果设置UI状态
         if (song.isSearchResult()) {
-            holder.searchBadgeView.setVisibility(View.VISIBLE);
-
-            // 如果已在播放列表中，使用不同的背景和图标表示
-            if (inPlaylist) {
-                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorInPlaylist));
-                holder.addToPlaylistButton.setImageResource(R.drawable.ic_check);
-            } else {
-                // 使用不同的背景颜色来突出显示搜索结果
-                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorSearchResult));
-                holder.addToPlaylistButton.setImageResource(R.drawable.ic_add);
-            }
-
-            // 显示添加到播放列表按钮
-            holder.addToPlaylistButton.setVisibility(View.VISIBLE);
-            // 设置添加按钮点击监听器
-            boolean finalInPlaylist = inPlaylist;
-            holder.addToPlaylistButton.setOnClickListener(v -> {
-                if (clickListener != null && !finalInPlaylist) {
-                    clickListener.onAddToPlaylistClick(position, song);
-                }
-            });
+            // 不再使用不同背景颜色区分搜索结果
+            holder.itemView.setBackgroundColor(Color.TRANSPARENT);
         } else {
-            holder.searchBadgeView.setVisibility(View.GONE);
             // 非搜索结果项使用透明背景
             holder.itemView.setBackgroundColor(Color.TRANSPARENT);
-            // 隐藏添加到播放列表按钮
-            holder.addToPlaylistButton.setVisibility(View.GONE);
-        }
-        // 加载专辑封面
+        }// 加载专辑封面
         if (song.getAlbumArtUri() != null) {
             // 根据URI类型使用不同的加载方式
             RequestOptions options = new RequestOptions()
@@ -164,23 +141,13 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
             }
         } else {
             holder.albumImageView.setImageResource(R.drawable.default_album);
-        }        // 设置当前播放歌曲的高亮效果 - 优先级高于搜索结果
+        }
+        // 设置当前播放歌曲的高亮效果 - 优先级高于搜索结果
         if (position == currentPlayingPosition) {
             // 设置当前播放歌曲的背景
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.colorHighlight));
             holder.nowPlayingIndicator.setVisibility(View.VISIBLE);
             holder.titleTextView.setTextColor(ContextCompat.getColor(context, R.color.colorAccent));
-            // 当前播放的歌曲如果是搜索结果，仍然显示搜索徽章
-            if (song.isSearchResult()) {
-                holder.searchBadgeView.setVisibility(View.VISIBLE);
-                holder.addToPlaylistButton.setVisibility(View.VISIBLE);
-
-                if (inPlaylist) {
-                    holder.addToPlaylistButton.setImageResource(R.drawable.ic_check);
-                }
-            } else {
-                holder.addToPlaylistButton.setVisibility(View.GONE);
-            }
         } else {
             // 非当前播放歌曲的背景
             if (!song.isSearchResult()) {
@@ -204,7 +171,10 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
                 return true;
             }
             return false;
-        });
+        });        // 将inPlaylist设为final变量，以便在lambda表达式中使用
+        final boolean finalInPlaylist = inPlaylist;
+
+        // 更多选项按钮已移除，不再需要相关代码
     }
 
     /**
@@ -319,8 +289,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
         TextView titleTextView;
         TextView artistTextView;
         TextView durationTextView;
-        TextView searchBadgeView;
-        ImageButton addToPlaylistButton;
+        // 已移除添加到播放队列按钮和更多选项按钮
 
         public SongViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -329,8 +298,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
             titleTextView = itemView.findViewById(R.id.tv_song_title);
             artistTextView = itemView.findViewById(R.id.tv_song_artist);
             durationTextView = itemView.findViewById(R.id.tv_song_duration);
-            searchBadgeView = itemView.findViewById(R.id.tv_search_badge);
-            addToPlaylistButton = itemView.findViewById(R.id.btn_add_to_playlist);
+            // 已移除添加到播放队列按钮和更多选项按钮
         }
     }
 
@@ -338,10 +306,22 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
      * 歌曲点击监听接口
      */
     public interface OnSongClickListener {
+        /**
+         * 歌曲点击回调
+         *
+         * @param position 歌曲在列表中的位置
+         * @param song     被点击的歌曲对象
+         */
         void onSongClick(int position, Song song);
 
+        /**
+         * 歌曲长按回调
+         *
+         * @param position 歌曲在列表中的位置
+         * @param song     被长按的歌曲对象
+         */
         void onSongLongClick(int position, Song song);
 
-        void onAddToPlaylistClick(int position, Song song);
+        // 已移除添加到播放队列和下一首播放的回调方法
     }
 }

@@ -1052,6 +1052,8 @@ public class MusicPlayerService extends Service implements ServiceCallback {
 
     @Override
     public void onDurationChanged(int duration) {
+        Log.d("MusicPlayerService", "收到媒体总时长更新: " + duration + "ms");
+
         // 通知所有回调
         for (PlayerCallback callback : callbacks) {
             callback.onDurationChanged(duration);
