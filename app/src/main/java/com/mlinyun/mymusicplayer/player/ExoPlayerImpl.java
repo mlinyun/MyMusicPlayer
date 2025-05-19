@@ -58,37 +58,28 @@ public class ExoPlayerImpl implements IPlayerEngine {
             exoPlayer.addListener(new Player.Listener() {
                 @Override
                 public void onPlaybackStateChanged(int playbackState) {
-                    Log.d(TAG, "ExoPlayer状态变更: " + playbackStateToString(playbackState));
-
                     // 更新状态标志
                     if (playbackState == Player.STATE_READY) {
                         isPreparing = false;
-                        Log.d(TAG, "ExoPlayer准备完成，可以播放");
 
                         // 准备完成
                         if (onPreparedListener != null) {
                             handler.post(() -> onPreparedListener.onPrepared());
-                        }
-
-                        // 如果需要自动播放
+                        }                        // 如果需要自动播放
                         if (needPlayWhenReady) {
                             needPlayWhenReady = false;
                             exoPlayer.play();
-                            Log.d(TAG, "ExoPlayer自动开始播放");
                         }
                     } else if (playbackState == Player.STATE_ENDED) {
                         // 播放完成
-                        Log.d(TAG, "ExoPlayer播放完成");
                         if (onCompletionListener != null) {
                             handler.post(() -> onCompletionListener.onCompletion());
                         }
                     } else if (playbackState == Player.STATE_IDLE) {
                         // 播放器空闲状态
                         isPreparing = false;
-                        Log.d(TAG, "ExoPlayer空闲状态");
                     } else if (playbackState == Player.STATE_BUFFERING) {
                         // 缓冲状态
-                        Log.d(TAG, "ExoPlayer正在缓冲");
                     }
                 }
 
@@ -110,11 +101,8 @@ public class ExoPlayerImpl implements IPlayerEngine {
                     if (onErrorListener != null) {
                         final int errorCode = error.errorCode;
                         handler.post(() -> onErrorListener.onError(errorCode, 0));
-                    }
-
-                    // 试图恢复播放
+                    }                    // 试图恢复播放
                     if (currentUri != null) {
-                        Log.d(TAG, "尝试从错误中恢复");
                         handler.postDelayed(() -> {
                             try {
                                 if (exoPlayer != null) {
@@ -130,11 +118,11 @@ public class ExoPlayerImpl implements IPlayerEngine {
 
                 @Override
                 public void onIsPlayingChanged(boolean isPlaying) {
-                    Log.d(TAG, "ExoPlayer播放状态变更: " + (isPlaying ? "正在播放" : "已暂停/停止"));
+                    // 通知播放状态变更
                 }
             });
 
-            Log.d(TAG, "ExoPlayer initialized successfully");
+            // ExoPlayer初始化成功
         } catch (Exception e) {
             Log.e(TAG, "Error initializing ExoPlayer", e);
             exoPlayer = null;
@@ -302,7 +290,7 @@ public class ExoPlayerImpl implements IPlayerEngine {
         if (exoPlayer != null) {
             try {
                 exoPlayer.pause();
-                Log.d(TAG, "ExoPlayer paused");
+                // 播放器已暂停
             } catch (Exception e) {
                 Log.e(TAG, "Error pausing ExoPlayer", e);
             }
@@ -314,7 +302,7 @@ public class ExoPlayerImpl implements IPlayerEngine {
         if (exoPlayer != null) {
             try {
                 exoPlayer.stop();
-                Log.d(TAG, "ExoPlayer stopped");
+                // 播放器已停止
             } catch (Exception e) {
                 Log.e(TAG, "Error stopping ExoPlayer", e);
             }
@@ -326,7 +314,7 @@ public class ExoPlayerImpl implements IPlayerEngine {
         if (exoPlayer != null) {
             try {
                 exoPlayer.seekTo(position);
-                Log.d(TAG, "ExoPlayer seeked to: " + position);
+                // 已跳转到指定位置
             } catch (Exception e) {
                 Log.e(TAG, "Error seeking in ExoPlayer", e);
             }

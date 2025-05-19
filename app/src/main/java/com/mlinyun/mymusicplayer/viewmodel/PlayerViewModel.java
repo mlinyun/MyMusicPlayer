@@ -1,5 +1,6 @@
 package com.mlinyun.mymusicplayer.viewmodel;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.ComponentName;
 import android.content.Context;
@@ -38,6 +39,7 @@ public class PlayerViewModel extends AndroidViewModel {
     private static final String TAG = "PlayerViewModel";
 
     // 服务连接相关
+    @SuppressLint("StaticFieldLeak")
     private MusicPlayerService musicService;
     private boolean isServiceBound = false;
     private final MutableLiveData<Boolean> serviceConnected = new MutableLiveData<>(false);
@@ -112,8 +114,6 @@ public class PlayerViewModel extends AndroidViewModel {
 
         @Override
         public void onPositionChanged(int position) {
-            // 记录进度更新，帮助调试
-            Log.d(TAG, "ViewModel收到位置更新: " + position + "ms");
             playbackPosition.postValue(position);
         }
 
@@ -142,7 +142,6 @@ public class PlayerViewModel extends AndroidViewModel {
 
         @Override
         public void onDurationChanged(int duration) {
-            Log.d(TAG, "接收到总时长更新: " + duration + "ms");
             PlayerViewModel.this.duration.postValue(duration);
         }
     };
@@ -347,10 +346,50 @@ public class PlayerViewModel extends AndroidViewModel {
             if (songIndex != -1) {
                 musicService.playAtIndex(songIndex);
             }
-            // 否则将歌曲添加到播放列表末尾，并播放
+            // 否则，对于非搜索结果的歌曲添加到播放列表并播放，而搜索结果仅播放不添加到列表
             else {
-                musicService.addSongAndPlay(song);
+                if (song.isSearchResult()) {
+                    // 搜索结果仅播放不添加到播放列表
+                    musicService.playSong(song);
+                } else {
+                    // 非搜索结果添加到播放列表末尾，并播放
+                    musicService.addSongAndPlay(song);
+                }
             }
+        }
+    }
+
+    /**
+     * 从播放列表中移除指定位置的歌曲
+     *
+     * @param index 要移除的歌曲索引
+     */
+    public void removeSongAtIndex(int index) {
+        if (musicService != null) {
+            Song songToRemove = null;
+            List<Song> currentPlaylist = musicService.getPlaylist();
+            if (index >= 0 && index < currentPlaylist.size()) {
+                songToRemove = currentPlaylist.get(index);
+            }
+
+            musicService.removeSong(index);
+
+            // 手动更新LiveData，确保UI更新
+            playlist.postValue(musicService.getPlaylist());
+            currentSongIndex.postValue(musicService.getCurrentIndex());
+        }
+    }
+
+    /**
+     * 清空播放列表
+     */
+    public void clearPlaylist() {
+        if (musicService != null) {
+            musicService.clearPlaylist();
+            // 手动更新LiveData，确保所有观察者接收到更新
+            playlist.postValue(new ArrayList<>());
+            currentSongIndex.postValue(-1);
+            currentSong.postValue(null);
         }
     }
 
@@ -614,6 +653,9 @@ public class PlayerViewModel extends AndroidViewModel {
     public void addSongAndPlay(Song song) {
         if (musicService != null && song != null) {
             musicService.addSongAndPlay(song);
+            // 手动更新播放列表数据和当前播放索引
+            playlist.postValue(musicService.getPlaylist());
+            currentSongIndex.postValue(musicService.getCurrentIndex());
         }
     }
 
@@ -621,8 +663,9 @@ public class PlayerViewModel extends AndroidViewModel {
      * 仅添加歌曲到播放列表，不播放
      *
      * @param song 要添加的歌曲
+     * @return 是否成功添加
      */
-    public void addSong(Song song) {
+    public boolean addSong(Song song) {
         if (musicService != null && song != null) {
             // 先检查歌曲是否已经在播放列表中
             boolean songExists = false;
@@ -638,8 +681,12 @@ public class PlayerViewModel extends AndroidViewModel {
             // 如果歌曲不在播放列表中，则添加
             if (!songExists) {
                 musicService.addSong(song);
+                // 手动更新播放列表数据，确保所有观察者接收到更新
+                playlist.postValue(musicService.getPlaylist());
+                return true;
             }
         }
+        return false;
     }
 
     /**

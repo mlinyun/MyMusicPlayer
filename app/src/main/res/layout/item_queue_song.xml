@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground"
+    android:padding="8dp">
+
+    <!-- 当前播放标识 -->
+    <ImageView
+        android:id="@+id/ivNowPlaying"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="@string/now_playing_indicator_description"
+        android:src="@drawable/ic_now_playing"
+        android:visibility="gone"
+        app:tint="@color/colorAccent"
+        tools:visibility="visible" />
+
+    <!-- 歌曲信息 -->
+    <LinearLayout
+        android:id="@+id/llSongInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="8dp"
+        android:layout_toStartOf="@id/ibRemoveFromQueue"
+        android:layout_toEndOf="@id/ivNowPlaying"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvQueueSongTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/colorText"
+            android:textSize="16sp"
+            tools:text="歌曲名称" />
+
+        <TextView
+            android:id="@+id/tvQueueSongArtist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="14sp"
+            tools:text="艺术家" />
+
+    </LinearLayout>
+
+    <!-- 从队列中移除按钮 -->
+    <ImageButton
+        android:id="@+id/ibRemoveFromQueue"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/remove_from_playlist"
+        android:src="@drawable/ic_close"
+        app:tint="@color/colorControlNormal" />
+
+</RelativeLayout>

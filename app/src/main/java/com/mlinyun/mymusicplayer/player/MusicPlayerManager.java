@@ -42,15 +42,12 @@ public class MusicPlayerManager {
         // 创建播放引擎
         if (engineType == PlayerEngineType.MEDIA_PLAYER) {
             playerEngine = new MediaPlayerImpl(context);
-            Log.d(TAG, "已创建MediaPlayer播放引擎");
         } else if (engineType == PlayerEngineType.EXO_PLAYER) {
             // 使用ExoPlayer实现，更适合Android 16 (SDK 35)
             playerEngine = new ExoPlayerImpl(context);
-            Log.d(TAG, "已创建ExoPlayer播放引擎");
         } else {
             // 默认回退到MediaPlayer
             playerEngine = new MediaPlayerImpl(context);
-            Log.d(TAG, "使用默认MediaPlayer播放引擎");
         }
 
         // 初始化进度更新Handler
@@ -60,12 +57,6 @@ public class MusicPlayerManager {
             public void run() {
                 if (playerEngine != null && isPlaying() && serviceCallback != null) {
                     int position = playerEngine.getCurrentPosition();
-                    int duration = playerEngine.getDuration();
-
-                    // 记录详细的播放进度信息，帮助调试
-                    Log.d(TAG, "播放进度更新: 位置=" + position + "ms, 总时长=" + duration + "ms" +
-                            ", 进度百分比=" + (duration > 0 ? (position * 100 / duration) : 0) + "%");
-
                     serviceCallback.onPlaybackPositionChanged(position);
                 }
                 progressHandler.postDelayed(this, UPDATE_INTERVAL_MS);
@@ -111,7 +102,6 @@ public class MusicPlayerManager {
                 // 准备完成后立即获取并通知总时长变化
                 if (serviceCallback != null) {
                     int duration = playerEngine.getDuration();
-                    Log.d(TAG, "媒体准备完成，总时长: " + duration + "ms");
                     serviceCallback.onDurationChanged(duration);
                     serviceCallback.onPlaybackStateChanged(currentState);
                 }
@@ -176,8 +166,7 @@ public class MusicPlayerManager {
                 return;
             }
 
-            Log.d(TAG, "准备播放: " + song.getTitle() + " (" + song.getPath() + ")");
-
+            // 准备播放歌曲
             currentSong = song;
             Uri uri = Uri.parse(song.getPath());
             currentState = PlayerState.PREPARING;
@@ -212,7 +201,6 @@ public class MusicPlayerManager {
                     playerEngine.play();
                     currentState = PlayerState.PLAYING;
                     startProgressTracking();
-
                     if (serviceCallback != null) {
                         serviceCallback.onPlaybackStateChanged(currentState);
                     }
@@ -220,7 +208,6 @@ public class MusicPlayerManager {
 
                 case COMPLETED:
                     // 如果播放完成，从头开始播放
-                    Log.d(TAG, "播放器状态: COMPLETED - 重新从头开始播放");
                     seekTo(0);
                     playerEngine.play();
                     currentState = PlayerState.PLAYING;

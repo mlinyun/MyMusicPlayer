@@ -270,7 +270,6 @@ public class MainActivity extends AppCompatActivity {
                             .diskCacheStrategy(DiskCacheStrategy.NONE) // 不缓存到磁盘
                             .skipMemoryCache(false) // 但使用内存缓存
                             .into(ivMiniAlbumArt);
-                    Log.d(TAG, "迷你播放器使用本地专辑封面: " + song.getAlbumArtPath());
                 } else {
                     // 媒体库封面
                     Glide.with(this)

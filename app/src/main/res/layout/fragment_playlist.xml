@@ -94,21 +94,58 @@
     </LinearLayout>
 
     <!-- 播放列表 -->
-    <TextView
-        android:id="@+id/tvPlaylistHeader"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/headerContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:text="@string/playlist_title"
-        android:textColor="@color/colorText"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sortLayout" />
+        app:layout_constraintTop_toBottomOf="@+id/sortLayout">
+
+        <TextView
+            android:id="@+id/tvPlaylistHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/playlist_title"
+            android:textColor="@color/colorText"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/btnPlayAll"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/play_all"
+            android:textColor="@color/colorAccent"
+            android:textSize="14sp"
+            app:icon="@drawable/ic_play"
+            app:iconTint="@color/colorAccent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btnAddAll"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/btnAddAll"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/add_to_playlist"
+            android:textColor="@color/colorAccent"
+            android:textSize="14sp"
+            app:icon="@drawable/ic_add"
+            app:iconTint="@color/colorAccent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
         android:id="@+id/tvSearchResultHeader"
@@ -124,7 +161,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvPlaylistHeader" />
+        app:layout_constraintTop_toBottomOf="@+id/headerContainer" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSongs"
@@ -170,24 +207,6 @@
             android:text="@string/no_songs_found"
             android:textColor="@color/colorTextSecondary"
             android:textSize="16sp" />
-
-        <Button
-            android:id="@+id/btnScanMusic"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:backgroundTint="@color/colorAccent"
-            android:text="@string/scan_music"
-            android:textColor="@color/colorText" />
-
-        <Button
-            android:id="@+id/btnRequestPermission"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="@color/colorPrimary"
-            android:text="@string/request_permission"
-            android:textColor="@color/colorText" />
     </LinearLayout>
 
     <!-- 加载进度条 -->

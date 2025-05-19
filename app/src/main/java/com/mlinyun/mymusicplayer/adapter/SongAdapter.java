@@ -151,12 +151,10 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
                                                            com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
                                                            com.bumptech.glide.load.DataSource dataSource,
                                                            boolean isFirstResource) {
-                                Log.d("SongAdapter", "本地专辑封面加载成功");
                                 return false;
                             }
                         })
                         .into(holder.albumImageView);
-                Log.d("SongAdapter", "从本地加载专辑封面: " + song.getAlbumArtPath());
             } else {
                 // 系统媒体库的封面通过content://加载
                 Glide.with(context)

@@ -175,10 +175,6 @@ public class MusicPlayerService extends Service implements ServiceCallback {
                             musicPlayerManager.getState() == PlayerState.PLAYING) {
                         int position = musicPlayerManager.getCurrentPosition();
 
-                        // 记录一些调试信息，帮助诊断进度更新问题
-                        int duration = musicPlayerManager.getDuration();
-                        Log.d(TAG, "进度更新: 位置=" + position + "ms, 总时长=" + duration + "ms");
-
                         // 通知位置变化
                         for (PlayerCallback callback : callbacks) {
                             callback.onPositionChanged(position);
@@ -296,35 +292,30 @@ public class MusicPlayerService extends Service implements ServiceCallback {
                 public void onPlay() {
                     super.onPlay();
                     play();
-                    Log.d("MediaSession", "收到播放指令");
                 }
 
                 @Override
                 public void onPause() {
                     super.onPause();
                     pause();
-                    Log.d("MediaSession", "收到暂停指令");
                 }
 
                 @Override
                 public void onSkipToNext() {
                     super.onSkipToNext();
                     playNext();
-                    Log.d("MediaSession", "收到下一首指令");
                 }
 
                 @Override
                 public void onSkipToPrevious() {
                     super.onSkipToPrevious();
                     playPrevious();
-                    Log.d("MediaSession", "收到上一首指令");
                 }
 
                 @Override
                 public void onStop() {
                     super.onStop();
                     stop();
-                    Log.d("MediaSession", "收到停止指令");
                 }
             };
 
@@ -825,6 +816,26 @@ public class MusicPlayerService extends Service implements ServiceCallback {
     }
 
     /**
+     * 清空播放列表
+     */
+    public void clearPlaylist() {
+        // 如果正在播放，先停止
+        if (musicPlayerManager.getCurrentState() == PlayerState.PLAYING) {
+            musicPlayerManager.stop();
+        }
+
+        // 清空播放列表
+        playlist.clear();
+        currentPosition = -1;
+
+        // 通知回调
+        for (PlayerCallback callback : callbacks) {
+            callback.onPlaylistChanged(playlist);
+            callback.onSongChanged(null);
+        }
+    }
+
+    /**
      * 播放指定索引的歌曲
      */
     public void playAtIndex(int index) {
@@ -852,7 +863,7 @@ public class MusicPlayerService extends Service implements ServiceCallback {
         // 检查歌曲是否已在播放列表中
         int songIndex = -1;
         for (int i = 0; i < playlist.size(); i++) {
-            if (playlist.get(i).getId() == song.getId()) {
+            if (playlist.get(i).getId().equals(song.getId())) {
                 songIndex = i;
                 break;
             }
@@ -861,8 +872,17 @@ public class MusicPlayerService extends Service implements ServiceCallback {
         // 如果歌曲在播放列表中，直接播放
         if (songIndex != -1) {
             playAtIndex(songIndex);
+        } else if (song.isSearchResult()) {
+            // 搜索结果直接播放而不添加到播放列表
+            currentPosition = -1; // 表示当前播放的歌曲不在播放列表中
+            musicPlayerManager.prepareAndPlay(song);
+
+            // 通知回调当前播放歌曲已变化
+            for (PlayerCallback callback : callbacks) {
+                callback.onSongChanged(song);
+            }
         } else {
-            // 如果歌曲不在播放列表中，添加到播放列表并播放
+            // 如果歌曲不在播放列表中且不是搜索结果，添加到播放列表并播放
             addSongAndPlay(song);
         }
 
@@ -876,6 +896,10 @@ public class MusicPlayerService extends Service implements ServiceCallback {
     public Song getCurrentSong() {
         if (currentPosition >= 0 && currentPosition < playlist.size()) {
             return playlist.get(currentPosition);
+        } else if (musicPlayerManager != null) {
+            // 如果当前播放歌曲不在播放列表中（如搜索结果），
+            // 则直接从播放器管理器获取当前歌曲
+            return musicPlayerManager.getCurrentSong();
         }
         return null;
     }
@@ -1028,8 +1052,6 @@ public class MusicPlayerService extends Service implements ServiceCallback {
 
     @Override
     public void onDurationChanged(int duration) {
-        Log.d("MusicPlayerService", "收到媒体总时长更新: " + duration + "ms");
-
         // 通知所有回调
         for (PlayerCallback callback : callbacks) {
             callback.onDurationChanged(duration);

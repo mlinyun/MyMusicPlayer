@@ -36,7 +36,7 @@ import com.mlinyun.mymusicplayer.viewmodel.PlayerViewModel;
  * 播放界面Fragment
  * 负责显示和控制当前播放歌曲的界面
  */
-public class PlaybackFragment extends Fragment {
+public class PlaybackFragment extends Fragment implements PlaylistBottomSheetDialog.PlaylistDialogCallback {
     // 标签常量
     private static final String TAG = "PlaybackFragment";
     // UI组件
@@ -56,6 +56,7 @@ public class PlaybackFragment extends Fragment {
     private View lyricsCard;
     private LrcView lrcViewFullscreen;
     private ImageView ivHintToAlbum;
+    private TextView tvSearchIndicator; // 搜索结果指示器
     private boolean isShowingLyrics = false;
 
 
@@ -106,10 +107,7 @@ public class PlaybackFragment extends Fragment {
         setupRotationAnimation();
 
         // 观察ViewModel数据变化
-        observeViewModel();
-
-        // 打印日志确认双击功能初始化
-        android.util.Log.d("PlaybackFragment", "双击切换功能已初始化");
+        observeViewModel();        // 打印日志确认双击功能初始化
     }
 
     /**
@@ -132,12 +130,9 @@ public class PlaybackFragment extends Fragment {
         lyricsCard = view.findViewById(R.id.lyricsCard);
         lrcViewFullscreen = view.findViewById(R.id.lrcViewFullscreen);
         ivHintToAlbum = view.findViewById(R.id.ivHintToAlbum);
-
-        // 记录日志帮助调试
+        tvSearchIndicator = view.findViewById(R.id.tvSearchIndicator); // 搜索结果指示器            // 如果当前找不到返回专辑按钮，做兼容处理
         if (ivHintToAlbum == null) {
             android.util.Log.e("PlaybackFragment", "找不到返回专辑按钮(ID: ivHintToAlbum)");
-        } else {
-            android.util.Log.d("PlaybackFragment", "已找到返回专辑按钮");
         }
 
         // 设置默认状态
@@ -155,97 +150,30 @@ public class PlaybackFragment extends Fragment {
      * 设置监听器
      */
     private void setupListeners() {
-        // 播放/暂停按钮
+        // 播放/暂停按钮点击监听
         ibPlayPause.setOnClickListener(v -> viewModel.togglePlayPause());
 
-        // 上一首按钮
+        // 上一曲按钮点击监听
         ibPrevious.setOnClickListener(v -> viewModel.playPrevious());
 
-        // 下一首按钮
+        // 下一曲按钮点击监听
         ibNext.setOnClickListener(v -> viewModel.playNext());
 
-        // 播放模式按钮
-        ibPlayMode.setOnClickListener(v -> viewModel.togglePlayMode());        // 播放列表按钮
+        // 播放模式切换监听
+        ibPlayMode.setOnClickListener(v -> togglePlayMode());        // 播放列表按钮点击监听
         ibPlaylist.setOnClickListener(v -> {
-            // 切换到播放列表页面
-            if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).navigateToPlaylist();
+            // 如果当前播放的是搜索结果，弹出添加到播放列表的选项
+            Song currentSong = viewModel.getCurrentSong().getValue();
+            if (currentSong != null && currentSong.isSearchResult()) {
+                PlaybackMenuHelper.addCurrentSearchResultToPlaylist(requireContext(), viewModel);
+            } else {
+                // 显示播放队列底部对话框
+                PlaylistBottomSheetDialog dialog = PlaylistBottomSheetDialog.newInstance();
+                dialog.show(getChildFragmentManager(), "playlist_dialog");
             }
         });
-        // 专辑封面点击显示歌词
-        albumContainer.setOnClickListener(v -> toggleLyricsView(true));
-        // 创建GestureDetector处理双击事件
-        gestureDetector = new GestureDetector(requireContext(),
-                new GestureDetector.SimpleOnGestureListener() {
-                    @Override
-                    public boolean onDoubleTap(MotionEvent e) {
-                        android.util.Log.d("PlaybackFragment", "检测到双击事件");
-                        // 双击时返回专辑封面
-                        if (isShowingLyrics) {
-                            toggleLyricsView(false);
-                            return true;
-                        }
-                        return false;
-                    }
 
-                    @Override
-                    public boolean onSingleTapConfirmed(MotionEvent e) {
-                        // 单击时不执行任何操作
-                        android.util.Log.d("PlaybackFragment", "检测到单击事件");
-                        return false;
-                    }
-
-                    @Override
-                    public boolean onDown(MotionEvent e) {
-                        // 必须返回true，表示关注该事件，否则其他事件不会被调用
-                        return true;
-                    }
-                });
-        // 设置歌词卡片的触摸监听器
-        lyricsCard.setOnTouchListener((v, event) -> {
-            // 记录触摸位置和时间，用于调试
-            android.util.Log.d("PlaybackFragment", "歌词视图触摸事件: " + event.getAction()
-                    + ", X=" + event.getX() + ", Y=" + event.getY());
-
-            // 传递给GestureDetector处理
-            boolean handled = gestureDetector.onTouchEvent(event);
-            android.util.Log.d("PlaybackFragment", "GestureDetector处理结果: " + handled);
-
-            // 确保view执行点击事件
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                v.performClick();
-            }
-
-            // 总是返回true以拦截所有事件
-            return true;
-        });
-        // 同样为全屏歌词视图设置触摸监听器，确保无论用户点击哪里都能接收到事件
-        lrcViewFullscreen.setOnTouchListener((v, event) -> {
-            android.util.Log.d("PlaybackFragment", "全屏歌词触摸事件: " + event.getAction());
-            // 让GestureDetector处理事件
-            boolean handled = gestureDetector.onTouchEvent(event);
-
-            // 确保view执行点击事件
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                v.performClick();
-            }
-
-            // 返回true表示已处理
-            return true;
-        });
-        // 为返回专辑提示按钮设置点击监听器
-        if (ivHintToAlbum != null) {
-            ivHintToAlbum.setOnClickListener(v -> {
-                android.util.Log.d("PlaybackFragment", "点击返回专辑提示按钮");
-                if (isShowingLyrics) {
-                    toggleLyricsView(false);
-                }
-            });
-        } else {
-            android.util.Log.e("PlaybackFragment", "返回专辑按钮未找到");
-        }
-
-        // 进度条监听
+        // 进度条变化监听
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -272,9 +200,7 @@ public class PlaybackFragment extends Fragment {
                 }
                 isUserSeeking = false;
             }
-        });
-
-        // 设置全屏歌词视图的点击监听
+        });        // 设置全屏歌词视图的点击监听
         // 这里不需要处理单击事件，因为我们已经用GestureDetector处理了触摸事件
         lrcViewFullscreen.setLrcViewListener(new LrcView.LrcViewListener() {
             @Override
@@ -288,6 +214,11 @@ public class PlaybackFragment extends Fragment {
                 viewModel.seekTo((int) lrcLine.getTimeMs());
             }
         });
+
+        // 添加专辑封面容器的点击事件，点击切换到歌词视图
+        albumContainer.setOnClickListener(v -> {
+            toggleLyricsView(true);
+        });
     }
 
     /**
@@ -295,9 +226,7 @@ public class PlaybackFragment extends Fragment {
      *
      * @param showLyrics 是否显示歌词
      */
-    private void toggleLyricsView(boolean showLyrics) {
-        // 记录当前状态，帮助调试
-        android.util.Log.d("PlaybackFragment", "toggleLyricsView: 当前=" + isShowingLyrics + ", 目标=" + showLyrics);
+    private void toggleLyricsView(boolean showLyrics) {        // 记录当前状态
 
         if (isShowingLyrics == showLyrics) return; // 避免重复切换
 
@@ -442,11 +371,20 @@ public class PlaybackFragment extends Fragment {
             tvSongTitle.setText("");
             tvArtist.setText("");
             ivAlbumArt.setImageResource(R.drawable.default_album);
+            tvSearchIndicator.setVisibility(View.GONE);
             return;
         }
 
         tvSongTitle.setText(song.getTitle());
         tvArtist.setText(song.getArtist());
+
+        // 更新搜索结果指示器
+        if (song.isSearchResult()) {
+            tvSearchIndicator.setVisibility(View.VISIBLE);
+        } else {
+            tvSearchIndicator.setVisibility(View.GONE);
+        }
+
         // 加载专辑封面，确保使用默认图片
         if (song.getAlbumArtUri() != null) {
             RequestOptions options = new RequestOptions()
@@ -476,19 +414,15 @@ public class PlaybackFragment extends Fragment {
                                                            com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
                                                            com.bumptech.glide.load.DataSource dataSource,
                                                            boolean isFirstResource) {
-                                Log.d(TAG, "本地专辑封面加载成功");
                                 return false;
                             }
                         })
                         .into(ivAlbumArt);
-                Log.d(TAG, "播放界面使用本地专辑封面: " + song.getAlbumArtPath());
-            } else {
-                // 从媒体库加载
+            } else {                // 从媒体库加载
                 Glide.with(this)
                         .load(song.getAlbumArtUri())
                         .apply(options)
                         .into(ivAlbumArt);
-                Log.d(TAG, "播放界面使用媒体库专辑封面: " + song.getAlbumArtUri());
             }
         } else {
             // 没有专辑封面时使用默认图片
@@ -683,6 +617,43 @@ public class PlaybackFragment extends Fragment {
     }
 
     /**
+     * 切换播放模式
+     * 在顺序播放、列表循环、随机播放和单曲循环之间切换
+     */
+    private void togglePlayMode() {
+        // 调用ViewModel中的方法切换播放模式
+        viewModel.togglePlayMode();
+
+        // 获取当前播放模式
+        PlayMode currentMode = viewModel.getPlayMode().getValue();
+
+        // 显示提示信息
+        if (currentMode != null) {
+            String modeMessage;
+            switch (currentMode) {
+                case SEQUENCE:
+                    modeMessage = getString(R.string.mode_sequence);
+                    break;
+                case LOOP:
+                    modeMessage = getString(R.string.mode_loop);
+                    break;
+                case SHUFFLE:
+                    modeMessage = getString(R.string.mode_shuffle);
+                    break;
+                case SINGLE_LOOP:
+                    modeMessage = getString(R.string.mode_single_loop);
+                    break;
+                default:
+                    modeMessage = getString(R.string.mode_sequence);
+                    break;
+            }
+
+            // 显示Toast提示当前播放模式
+            Toast.makeText(requireContext(), modeMessage, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
      * 确保双击事件监听器正确设置
      */
     private void ensureDoubleTapListenerSetup() {
@@ -692,7 +663,6 @@ public class PlaybackFragment extends Fragment {
                     new GestureDetector.SimpleOnGestureListener() {
                         @Override
                         public boolean onDoubleTap(MotionEvent e) {
-                            android.util.Log.d("PlaybackFragment", "检测到双击事件");
                             // 双击时返回专辑封面
                             if (isShowingLyrics) {
                                 toggleLyricsView(false);
@@ -704,7 +674,6 @@ public class PlaybackFragment extends Fragment {
                         @Override
                         public boolean onSingleTapConfirmed(MotionEvent e) {
                             // 单击时不执行任何操作
-                            android.util.Log.d("PlaybackFragment", "检测到单击事件");
                             return false;
                         }
 
@@ -718,14 +687,8 @@ public class PlaybackFragment extends Fragment {
 
         // 重新设置歌词卡片的触摸监听器
         if (lyricsCard != null) {
-            lyricsCard.setOnTouchListener((v, event) -> {
-                // 记录触摸位置和时间，用于调试
-                android.util.Log.d("PlaybackFragment", "歌词视图触摸事件: " + event.getAction()
-                        + ", X=" + event.getX() + ", Y=" + event.getY());
-
-                // 传递给GestureDetector处理
+            lyricsCard.setOnTouchListener((v, event) -> {                // 传递给GestureDetector处理
                 boolean handled = gestureDetector.onTouchEvent(event);
-                android.util.Log.d("PlaybackFragment", "GestureDetector处理结果: " + handled);
 
                 // 确保view执行点击事件
                 if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -739,7 +702,6 @@ public class PlaybackFragment extends Fragment {
         // 同样为全屏歌词视图设置触摸监听器
         if (lrcViewFullscreen != null) {
             lrcViewFullscreen.setOnTouchListener((v, event) -> {
-                android.util.Log.d("PlaybackFragment", "全屏歌词触摸事件: " + event.getAction());
                 // 让GestureDetector处理事件
                 boolean handled = gestureDetector.onTouchEvent(event);
 
@@ -807,6 +769,26 @@ public class PlaybackFragment extends Fragment {
                 return false;
             });
         }
+    }
+
+    /**
+     * 获取ViewModel实例
+     * 提供给BottomSheetDialog使用
+     *
+     * @return PlayerViewModel
+     */
+    public PlayerViewModel getViewModel() {
+        return viewModel;
+    }
+
+    /**
+     * 实现PlaylistDialogCallback接口
+     * 处理播放列表对话框中的事件
+     */
+    @Override
+    public void onPlaylistItemSelected() {
+        // 当从播放队列中选择歌曲时更新界面
+        // 不需要特殊处理，因为我们已经通过LiveData观察了数据变化，UI会自动更新
     }
 
     /**

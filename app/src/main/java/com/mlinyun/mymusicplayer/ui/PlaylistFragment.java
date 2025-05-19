@@ -36,10 +36,10 @@ import com.mlinyun.mymusicplayer.viewmodel.PlayerViewModel;
 import java.util.List;
 
 /**
- * 播放列表界面Fragment
- * 显示歌曲列表，支持搜索、排序和选择播放
+ * 我的音乐界面Fragment
+ * 显示本地歌曲列表，支持搜索、排序和播放
  */
-public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClickListener {    // UI组件
+public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClickListener {// UI组件
     private RecyclerView recyclerView;
     private EditText etSearch;
     private Spinner spinnerSort;
@@ -49,6 +49,8 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
     private ProgressBar progressBar;
     private TextView tvPlaylistHeader;
     private TextView tvSearchResultHeader;
+    private Button btnPlayAll;
+    private Button btnAddAll;
 
     // 数据适配器
     private SongAdapter adapter;
@@ -90,6 +92,9 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
         // 设置扫描按钮
         setupScanButton();
 
+        // 设置功能按钮
+        setupActionButtons();
+
         // 观察数据变化
         observeViewModel();
     }
@@ -107,13 +112,8 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
         progressBar = view.findViewById(R.id.progressBar);
         tvPlaylistHeader = view.findViewById(R.id.tvPlaylistHeader);
         tvSearchResultHeader = view.findViewById(R.id.tvSearchResultHeader);
-        Button btnRequestPermission = view.findViewById(R.id.btnRequestPermission);
-        btnRequestPermission.setOnClickListener(v -> {
-            // 直接请求权限
-            if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).checkAndRequestPermissions();
-            }
-        });
+        btnPlayAll = view.findViewById(R.id.btnPlayAll);
+        btnAddAll = view.findViewById(R.id.btnAddAll);
 
         // 设置RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -282,6 +282,62 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
     }
 
     /**
+     * 设置功能按钮
+     */
+    private void setupActionButtons() {
+        // 播放全部按钮点击事件
+        btnPlayAll.setOnClickListener(v -> {
+            List<Song> songs = viewModel.getFilteredSongs().getValue();
+            if (songs != null && !songs.isEmpty()) {
+                // 播放第一首歌曲
+                viewModel.playSong(songs.get(0));
+
+                // 显示提示信息
+                Toast.makeText(requireContext(),
+                        getString(R.string.now_playing_song, songs.get(0).getTitle()),
+                        Toast.LENGTH_SHORT).show();
+
+                // 跳转到播放页面
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToPlayback();
+                }
+            }
+        });
+
+        // 添加全部到播放列表按钮点击事件
+        btnAddAll.setOnClickListener(v -> {
+            List<Song> songs = viewModel.getFilteredSongs().getValue();
+            if (songs != null && !songs.isEmpty()) {
+                int addedCount = 0;
+
+                // 添加所有非搜索结果的歌曲或者搜索结果中还没有添加到播放列表的歌曲
+                for (Song song : songs) {
+                    if (song.isSearchResult()) {
+                        // 创建非搜索结果版本的歌曲
+                        Song playlistSong = new Song(
+                                song.getId(), song.getTitle(), song.getArtist(),
+                                song.getAlbum(), song.getDuration(), song.getPath(),
+                                song.getAlbumArtUri()
+                        );
+                        playlistSong.setSearchResult(false);
+
+                        // 添加到播放列表
+                        viewModel.addSong(playlistSong);
+                        addedCount++;
+                    }
+                }
+
+                // 显示添加成功提示
+                if (addedCount > 0) {
+                    Toast.makeText(requireContext(),
+                            "已添加 " + addedCount + " 首歌曲到播放队列",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    /**
      * 观察ViewModel数据变化
      */
     private void observeViewModel() {
@@ -350,15 +406,20 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
      */
     @Override
     public void onSongClick(int position, Song song) {
-        // 检查是否为搜索结果中的歌曲
-        if (song.isSearchResult()) {
-            // 搜索结果点击 - 将歌曲添加到播放列表并播放
-            addSongToPlaylistAndPlay(song);
-        } else {            // 播放列表中的歌曲 - 直接播放
-            viewModel.playSong(song);
+        // 无论是否为搜索结果，都直接播放歌曲
+        viewModel.playSong(song);
 
-            // 显示正在播放的提示信息
-            Toast.makeText(requireContext(), getString(R.string.now_playing_song, song.getTitle()), Toast.LENGTH_SHORT).show();
+        // 显示不同的提示信息，区分搜索结果和播放列表中的歌曲
+        if (song.isSearchResult()) {
+            // 搜索结果播放提示
+            Toast.makeText(requireContext(),
+                    getString(R.string.local_music) + ": " + song.getTitle(),
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            // 正常播放提示
+            Toast.makeText(requireContext(),
+                    getString(R.string.now_playing_song, song.getTitle()),
+                    Toast.LENGTH_SHORT).show();
         }
 
         // 跳转到播放页面
@@ -406,25 +467,20 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
      */
     @Override
     public void onAddToPlaylistClick(int position, Song song) {
-        if (song.isSearchResult()) {
-            // 创建非搜索结果版本的歌曲
-            Song playlistSong = new Song(
-                    song.getId(), song.getTitle(), song.getArtist(),
-                    song.getAlbum(), song.getDuration(), song.getPath(),
-                    song.getAlbumArtUri()
-            );
-            // 确保设置为非搜索结果
-            playlistSong.setSearchResult(false);
+        // 创建非搜索结果版本的歌曲
+        Song playlistSong = new Song(
+                song.getId(), song.getTitle(), song.getArtist(),
+                song.getAlbum(), song.getDuration(), song.getPath(),
+                song.getAlbumArtUri()
+        );
+        // 确保设置为非搜索结果
+        playlistSong.setSearchResult(false);
 
-            // 仅添加到播放列表，不立即播放
-            viewModel.addSong(playlistSong);
+        // 仅添加到播放列表，不立即播放
+        viewModel.addSong(playlistSong);
 
-            // 显示添加到播放列表的提示信息
-            Toast.makeText(requireContext(), getString(R.string.added_to_playlist, song.getTitle()), Toast.LENGTH_SHORT).show();
-
-            // 通知适配器数据已更改，以更新UI显示
-            adapter.notifyDataSetChanged();
-        }
+        // 显示添加到播放列表的提示信息
+        Toast.makeText(requireContext(), getString(R.string.added_to_playlist, song.getTitle()), Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -463,8 +519,8 @@ public class PlaylistFragment extends Fragment implements SongAdapter.OnSongClic
             return;
         }
 
-        // 当搜索时，显示本地音乐标题；否则显示播放列表标题
-        tvPlaylistHeader.setVisibility(isSearching ? View.GONE : View.VISIBLE);
+        // 始终显示"我的音乐"标题
+        tvPlaylistHeader.setVisibility(View.VISIBLE);
 
         // 检查是否有搜索结果
         boolean hasSearchResults = false;

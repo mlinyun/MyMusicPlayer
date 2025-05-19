@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">我的音乐播放器</string>
-
-    <!-- 底部导航 -->
+    <string name="app_name">我的音乐播放器</string>    <!-- 底部导航 -->
     <string name="nav_player">播放</string>
-    <string name="nav_playlist">播放列表</string>
+    <string name="nav_playlist">我的音乐</string>
     <!-- 播放器界面 -->
     <string name="now_playing_title">正在播放</string>
     <string name="play_pause_description">播放/暂停</string>
@@ -19,7 +17,7 @@
     <string name="tap_to_show_lyrics">点击显示歌词</string>
     <string name="back_to_album">返回专辑封面</string>
     <!-- 播放列表界面 -->
-    <string name="playlist_title">播放列表</string>
+    <string name="playlist_title">我的音乐</string>
     <string name="search_hint">搜索歌曲、艺术家或专辑</string>
     <string name="sort_by">排序方式：</string>
     <string name="songs_count">%1$d 首歌曲</string>
@@ -27,9 +25,11 @@
     <string name="scan_music">扫描音乐</string>
     <string name="no_songs_description">无歌曲图标</string>
     <string name="add_music_description">添加音乐</string>
-    <string name="in_playlist">已在队列</string>
-
-    <!-- 播放模式 -->
+    <string name="local_music">本地音乐</string>
+    <string name="now_playing_song">正在播放: %1$s</string>
+    <string name="added_to_playlist">已添加到播放队列: %1$s</string>
+    <string name="play_all">播放全部</string>
+    <string name="add_to_playlist">添加到播放队列</string>
     <string name="mode_sequence">顺序播放</string>
     <string name="mode_loop">列表循环</string>
     <string name="mode_shuffle">随机播放</string>
@@ -84,9 +84,12 @@
     </string-array>
 
     <!-- 搜索结果和播放相关 -->
-    <string name="added_to_playlist">已添加到播放列表: %1$s</string>
-    <string name="now_playing_song">正在播放: %1$s</string>
     <string name="search_result_badge">搜索结果</string>
-    <string name="add_to_playlist">添加到播放队列</string>
-    <string name="local_music">本地搜索结果</string>
+    <string name="added_songs_to_playlist">已添加 %1$d 首歌曲到播放队列</string>
+    <string name="play_queue_title">播放队列</string>
+    <string name="playlist_count">(%1$d首)</string>
+    <string name="clear_playlist">清空播放队列</string>
+    <string name="playlist_cleared">播放队列已清空</string>
+    <string name="remove_from_playlist">从播放队列中移除</string>
+    <string name="song_removed">已从播放队列中移除 %1$s</string>
 </resources>
