@@ -3,10 +3,9 @@ package com.mlinyun.mymusicplayer.service;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Intent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.os.Binder;
 import android.os.Build;
@@ -23,11 +22,9 @@ import androidx.core.app.NotificationCompat;
 import com.mlinyun.mymusicplayer.R;
 import com.mlinyun.mymusicplayer.model.Song;
 import com.mlinyun.mymusicplayer.player.AudioFocusHandler;
-import com.mlinyun.mymusicplayer.player.IPlayerEngine;
-import com.mlinyun.mymusicplayer.player.MediaPlayerImpl;
 import com.mlinyun.mymusicplayer.player.MusicPlayerManager;
-import com.mlinyun.mymusicplayer.player.PlayerState;
 import com.mlinyun.mymusicplayer.player.PlayMode;
+import com.mlinyun.mymusicplayer.player.PlayerState;
 import com.mlinyun.mymusicplayer.player.ServiceCallback;
 
 import java.util.ArrayList;
@@ -792,24 +789,42 @@ public class MusicPlayerService extends Service implements ServiceCallback {
     }
 
     /**
-     * 移除歌曲
+     * 从播放列表中移除指定位置的歌曲
+     *
+     * @param position 要移除的歌曲位置
      */
-    public void removeSong(int index) {
-        if (index < 0 || index >= playlist.size()) return;
-
-        // 如果移除的是正在播放的歌曲，则停止播放
-        if (index == currentPosition) {
-            stop();
-            currentPosition = -1; // 重置当前播放位置
+    public void removeSongAtIndex(int position) {
+        if (position < 0 || position >= playlist.size()) {
+            return;
         }
-        // 如果移除的歌曲在正在播放的歌曲之前，需要调整当前播放位置
-        else if (index < currentPosition) {
+
+        // 判断是否是当前播放的歌曲
+        boolean isCurrentSong = (position == currentPosition);
+
+        // 移除歌曲
+        playlist.remove(position);
+
+        // 如果移除的是当前播放的歌曲，则播放下一首
+        if (isCurrentSong) {
+            if (playlist.isEmpty()) {
+                // 播放列表为空，停止播放
+                stop();
+                currentPosition = -1;
+            } else if (position < playlist.size()) {
+                // 继续播放当前位置的下一首歌
+                currentPosition = position;
+                play();
+            } else {
+                // 如果删除的是最后一首，从列表头开始播放
+                currentPosition = 0;
+                play();
+            }
+        } else if (position < currentPosition) {
+            // 如果移除的歌曲在当前播放歌曲之前，需要调整currentPosition
             currentPosition--;
         }
 
-        playlist.remove(index);
-
-        // 通知回调
+        // 通知播放列表已变化
         for (PlayerCallback callback : callbacks) {
             callback.onPlaylistChanged(playlist);
         }
@@ -819,19 +834,16 @@ public class MusicPlayerService extends Service implements ServiceCallback {
      * 清空播放列表
      */
     public void clearPlaylist() {
-        // 如果正在播放，先停止
-        if (musicPlayerManager.getCurrentState() == PlayerState.PLAYING) {
-            musicPlayerManager.stop();
-        }
+        // 先停止播放
+        stop();
 
-        // 清空播放列表
+        // 清空播放列表并重置播放位置
         playlist.clear();
         currentPosition = -1;
 
-        // 通知回调
+        // 通知播放列表已变化
         for (PlayerCallback callback : callbacks) {
             callback.onPlaylistChanged(playlist);
-            callback.onSongChanged(null);
         }
     }
 

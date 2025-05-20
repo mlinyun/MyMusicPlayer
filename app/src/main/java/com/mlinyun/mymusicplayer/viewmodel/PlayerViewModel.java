@@ -6,7 +6,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -14,7 +16,6 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Transformations;
 
 import com.mlinyun.mymusicplayer.model.Lyrics;
 import com.mlinyun.mymusicplayer.model.Song;
@@ -89,7 +90,7 @@ public class PlayerViewModel extends AndroidViewModel {
             MusicPlayerService.MusicBinder binder = (MusicPlayerService.MusicBinder) service;
             musicService = binder.getService();
             isServiceBound = true;
-            serviceConnected.postValue(true);
+            serviceConnected.setValue(true);
 
             // 注册回调
             registerServiceCallback();
@@ -102,25 +103,26 @@ public class PlayerViewModel extends AndroidViewModel {
         public void onServiceDisconnected(ComponentName name) {
             musicService = null;
             isServiceBound = false;
-            serviceConnected.postValue(false);
+            serviceConnected.setValue(false);
         }
     };
+
     // 服务回调
     private final MusicPlayerService.PlayerCallback serviceCallback = new MusicPlayerService.PlayerCallback() {
         @Override
         public void onPlayStateChanged(PlayerState state) {
-            playerState.postValue(state);
+            playerState.setValue(state);
         }
 
         @Override
         public void onPositionChanged(int position) {
-            playbackPosition.postValue(position);
+            playbackPosition.setValue(position);
         }
 
         @Override
         public void onSongChanged(Song song) {
-            currentSong.postValue(song);
-            duration.postValue(musicService.getDuration());
+            currentSong.setValue(song);
+            duration.setValue(musicService.getDuration());
 
             // 当歌曲变化时，加载歌词
             if (song != null) {
@@ -130,8 +132,8 @@ public class PlayerViewModel extends AndroidViewModel {
 
         @Override
         public void onPlaylistChanged(List<Song> songs) {
-            playlist.postValue(songs);
-            currentSongIndex.postValue(musicService.getCurrentIndex());
+            playlist.setValue(songs);
+            currentSongIndex.setValue(musicService.getCurrentIndex());
         }
 
         @Override
@@ -142,7 +144,7 @@ public class PlayerViewModel extends AndroidViewModel {
 
         @Override
         public void onDurationChanged(int duration) {
-            PlayerViewModel.this.duration.postValue(duration);
+            PlayerViewModel.this.duration.setValue(duration);
         }
     };
 
@@ -202,19 +204,8 @@ public class PlayerViewModel extends AndroidViewModel {
      */
     private void updateFromService() {
         if (musicService != null) {
-            playerState.postValue(musicService.getPlayerState());
-            playbackPosition.postValue(musicService.getCurrentPosition());
-            duration.postValue(musicService.getDuration());
-            currentSong.postValue(musicService.getCurrentSong());
-            playlist.postValue(musicService.getPlaylist());
-            currentSongIndex.postValue(musicService.getCurrentIndex());
-            playMode.postValue(musicService.getPlayMode());
-
-            // 加载当前歌曲的歌词
-            Song song = musicService.getCurrentSong();
-            if (song != null) {
-                loadLyrics(song);
-            }
+            // 使用刷新方法更新所有LiveData
+            refreshAllData();
         }
     }
 
@@ -366,17 +357,20 @@ public class PlayerViewModel extends AndroidViewModel {
      */
     public void removeSongAtIndex(int index) {
         if (musicService != null) {
-            Song songToRemove = null;
             List<Song> currentPlaylist = musicService.getPlaylist();
             if (index >= 0 && index < currentPlaylist.size()) {
-                songToRemove = currentPlaylist.get(index);
+                // 在后台线程执行操作
+                new Thread(() -> {
+                    // 调用服务方法移除歌曲
+                    musicService.removeSongAtIndex(index);
+
+                    // 在主线程更新UI
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        playlist.setValue(musicService.getPlaylist());
+                        currentSongIndex.setValue(musicService.getCurrentIndex());
+                    });
+                }).start();
             }
-
-            musicService.removeSong(index);
-
-            // 手动更新LiveData，确保UI更新
-            playlist.postValue(musicService.getPlaylist());
-            currentSongIndex.postValue(musicService.getCurrentIndex());
         }
     }
 
@@ -385,11 +379,18 @@ public class PlayerViewModel extends AndroidViewModel {
      */
     public void clearPlaylist() {
         if (musicService != null) {
-            musicService.clearPlaylist();
-            // 手动更新LiveData，确保所有观察者接收到更新
-            playlist.postValue(new ArrayList<>());
-            currentSongIndex.postValue(-1);
-            currentSong.postValue(null);
+            // 在后台线程执行操作
+            new Thread(() -> {
+                // 调用服务方法清空播放列表
+                musicService.clearPlaylist();
+
+                // 在主线程更新UI
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    playlist.setValue(new ArrayList<>());
+                    currentSongIndex.setValue(-1);
+                    currentSong.setValue(null);
+                });
+            }).start();
         }
     }
 
@@ -432,10 +433,20 @@ public class PlayerViewModel extends AndroidViewModel {
         return currentSong;
     }
 
+    /**
+     * 获取播放列表LiveData
+     *
+     * @return 播放列表LiveData
+     */
     public LiveData<List<Song>> getPlaylist() {
         return playlist;
     }
 
+    /**
+     * 获取当前播放索引LiveData
+     *
+     * @return 当前播放索引LiveData
+     */
     public LiveData<Integer> getCurrentSongIndex() {
         return currentSongIndex;
     }
@@ -713,6 +724,52 @@ public class PlayerViewModel extends AndroidViewModel {
         } else {
             Log.e(TAG, "无法处理专辑封面错误，将使用默认封面");
             return false;
+        }
+    }
+
+    /**
+     * 获取MusicPlayerService实例
+     * 此方法主要用于测试和调试，正常情况下UI层不应直接访问Service
+     *
+     * @return MusicPlayerService实例，如果未绑定则返回null
+     */
+    public MusicPlayerService getMusicService() {
+        return musicService;
+    }
+
+    /**
+     * 刷新所有LiveData的数据，确保UI显示最新状态
+     * 在服务连接状态变化或需要强制刷新UI时调用
+     */
+    public void refreshAllData() {
+        if (musicService != null) {
+            // 在后台线程执行数据获取
+            new Thread(() -> {
+                // 获取最新数据
+                final PlayerState state = musicService.getPlayerState();
+                final int position = musicService.getCurrentPosition();
+                final int dur = musicService.getDuration();
+                final Song song = musicService.getCurrentSong();
+                final List<Song> songs = musicService.getPlaylist();
+                final int index = musicService.getCurrentIndex();
+                final PlayMode mode = musicService.getPlayMode();
+
+                // 在主线程更新UI
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    playerState.setValue(state);
+                    playbackPosition.setValue(position);
+                    duration.setValue(dur);
+                    currentSong.setValue(song);
+                    playlist.setValue(songs);
+                    currentSongIndex.setValue(index);
+                    playMode.setValue(mode);
+
+                    // 加载当前歌曲的歌词
+                    if (song != null) {
+                        loadLyrics(song);
+                    }
+                });
+            }).start();
         }
     }
 }

@@ -28,6 +28,7 @@ import java.util.List;
 /**
  * 播放队列底部对话框
  * 显示当前的播放队列，支持选择歌曲播放和从队列中删除
+ * 通过ViewModel获取最新的服务数据
  */
 public class PlaylistBottomSheetDialog extends BottomSheetDialogFragment implements SongAdapter.OnSongClickListener {
 
@@ -67,6 +68,9 @@ public class PlaylistBottomSheetDialog extends BottomSheetDialogFragment impleme
 
         // 初始化ViewModel
         viewModel = ((PlaybackFragment) requireParentFragment()).getViewModel();
+
+        // 先刷新数据，确保获取最新播放列表
+        viewModel.refreshAllData();
 
         // 初始化视图
         initViews(view);
