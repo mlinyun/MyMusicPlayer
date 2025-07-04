@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐播放器原型</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 自定义样式 */
+        body {
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            touch-action: manipulation;
+        }
+
+        /* 专辑封面旋转动画 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .album-rotating {
+            animation: rotate 20s linear infinite;
+        }
+        
+        .album-paused {
+            animation-play-state: paused;
+        }
+        
+        /* 进度条样式 */
+        .progress-container {
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: #FF4081;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .progress-thumb {
+            width: 12px;
+            height: 12px;
+            background-color: #FF4081;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translate(50%, -50%);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s;
+        }
+        
+        .progress-container:hover .progress-thumb {
+            transform: translate(50%, -50%) scale(1.2);
+        }
+        
+        /* 歌词滚动区域 */
+        .lyrics-container {
+            mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+        }
+        
+        /* 控制按钮点击效果 */
+        .control-btn {
+            transition: transform 0.1s, opacity 0.1s;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+        
+        /* 视图切换过渡动画 */
+        .view-transition {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        /* 列表项滑动效果 */
+        .playlist-item {
+            transition: background-color 0.2s;
+        }
+        
+        /* 当前播放歌词高亮 */
+        .lyrics-highlight {
+            color: #FF4081;
+            font-weight: 500;
+            transform: scale(1.05);
+            transition: color 0.3s, transform 0.3s;
+        }
+        
+        /* 暗色主题支持 */
+        @media (prefers-color-scheme: dark) {
+            .text-dark {
+                color: #FFFFFF;
+            }
+            .bg-light {
+                background-color: #121212;
+            }
+        }
+
+        /* 添加响应式断点 */
+        .phone-frame {
+            width: 360px;
+            height: 780px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @media (min-width: 640px) {
+            .phone-frame {
+                border-radius: 32px;
+                border: 12px solid #262626;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+    <!-- 手机设备框架 -->
+    <div class="phone-frame mx-auto bg-white shadow-xl">
+        <!-- 应用界面 -->
+        <div id="app" class="relative w-full h-full overflow-hidden flex flex-col bg-gradient-to-b from-blue-900 to-blue-950 text-white">
+            
+            <!-- 顶部状态栏 -->
+            <div class="px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center">
+                    <i class="fas fa-chevron-left mr-3"></i>
+                    <span class="text-lg font-medium">我的音乐</span>
+                </div>
+                <div>
+                    <i class="fas fa-ellipsis-v"></i>
+                </div>
+            </div>
+            
+            <!-- 内容区域 - 默认显示封面视图 -->
+            <div id="content-area" class="flex-1 overflow-hidden">
+                
+                <!-- 封面视图 -->
+                <div id="cover-view" class="view-transition w-full h-full flex flex-col items-center justify-center px-6">
+                    <div class="relative w-64 h-64 mb-8">
+                        <div class="w-full h-full rounded-full overflow-hidden shadow-lg album-rotating">
+                            <img src="https://picsum.photos/id/65/400" alt="专辑封面" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-16 h-16 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 歌词视图 (初始隐藏) -->
+                <div id="lyrics-view" class="view-transition absolute inset-0 opacity-0 hidden flex flex-col items-center px-6 pt-4">
+                    <div class="lyrics-container w-full flex-1 overflow-auto py-10 text-center">
+                        <div class="py-3 opacity-60">每一天都变得更聪明一点</div>
+                        <div class="py-3 opacity-60">人们为什么要加倍努力</div>
+                        <div class="py-3 opacity-60">而你和那些星星有什么两样</div>
+                        <div class="py-3 opacity-60">难道就是熄灭了自己才能发光</div>
+                        <div class="py-3 lyrics-highlight">我不知道，我能够成为什么</div>
+                        <div class="py-3 opacity-60">至少这一刻我不想要将就</div>
+                        <div class="py-3 opacity-60">那些我深爱的那些我愿意</div>
+                        <div class="py-3 opacity-60">那些我跌跌撞撞才得到的勇气</div>
+                        <div class="py-3 opacity-60">总有一天我要全部梦想实现</div>
+                        <div class="py-3 opacity-60">让我为自己骄傲地活一遍</div>
+                        <div class="py-3 opacity-60">至少在这一刻 我努力地向前</div>
+                        <div class="py-3 opacity-60">那是因为我喜欢这样的自己</div>
+                        <div class="py-20"></div> <!-- 底部留白区域，确保滚动到底部时歌词居中 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 歌曲信息 -->
+            <div class="px-8 pt-2">
+                <h2 class="text-xl font-bold mb-1 text-center">追光者</h2>
+                <p class="text-sm opacity-80 text-center mb-6">岑宁儿 - 夏至未至 电视原声带</p>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="px-8 mb-2">
+                <div class="progress-container">
+                    <div class="progress" style="width: 45%;">
+                        <div class="progress-thumb"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-xs opacity-70 mt-1">
+                    <span>01:45</span>
+                    <span>03:55</span>
+                </div>
+            </div>
+            
+            <!-- 控制按钮 -->
+            <div class="flex items-center justify-center space-x-8 py-6">
+                <button class="control-btn w-10 h-10 flex items-center justify-center">
+                    <i class="fas fa-random text-lg opacity-70"></i>
+                </button>
+                <button class="control-btn w-10 h-10 flex items-center justify-center">
+                    <i class="fas fa-step-backward text-lg"></i>
+                </button>
+                <button class="control-btn w-16 h-16 flex items-center justify-center bg-pink-500 rounded-full shadow-lg">
+                    <i class="fas fa-pause text-xl"></i>
+                </button>
+                <button class="control-btn w-10 h-10 flex items-center justify-center">
+                    <i class="fas fa-step-forward text-lg"></i>
+                </button>
+                <button class="control-btn w-10 h-10 flex items-center justify-center">
+                    <i class="fas fa-repeat text-lg opacity-70"></i>
+                </button>
+            </div>
+            
+            <!-- 播放列表 (初始隐藏) -->
+            <div id="playlist" class="absolute left-0 bottom-0 right-0 transform translate-y-full bg-white rounded-t-3xl shadow-lg text-gray-800 transition-transform duration-300">
+                <div class="py-3 px-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="font-bold text-lg">播放列表</h3>
+                    <button class="rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-100">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="h-80 overflow-auto">
+                    <div class="playlist-item flex items-center py-3 px-4 bg-gray-100 border-l-4 border-pink-500">
+                        <div class="w-10 h-10 bg-gray-300 rounded mr-3 flex-shrink-0">
+                            <img src="https://picsum.photos/id/65/60" class="w-full h-full object-cover rounded" alt="封面">
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">追光者</div>
+                            <div class="text-sm text-gray-600">岑宁儿</div>
+                        </div>
+                        <div class="text-sm text-gray-500 mr-2">03:55</div>
+                        <button class="w-8 h-8 flex items-center justify-center text-gray-500">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                    <div class="playlist-item flex items-center py-3 px-4 hover:bg-gray-50">
+                        <div class="w-10 h-10 bg-gray-300 rounded mr-3 flex-shrink-0">
+                            <img src="https://picsum.photos/id/96/60" class="w-full h-full object-cover rounded" alt="封面">
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">云烟成雨</div>
+                            <div class="text-sm text-gray-600">房东的猫</div>
+                        </div>
+                        <div class="text-sm text-gray-500 mr-2">05:12</div>
+                        <button class="w-8 h-8 flex items-center justify-center text-gray-500">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                    <div class="playlist-item flex items-center py-3 px-4 hover:bg-gray-50">
+                        <div class="w-10 h-10 bg-gray-300 rounded mr-3 flex-shrink-0">
+                            <img src="https://picsum.photos/id/42/60" class="w-full h-full object-cover rounded" alt="封面">
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">不染</div>
+                            <div class="text-sm text-gray-600">毛不易</div>
+                        </div>
+                        <div class="text-sm text-gray-500 mr-2">04:07</div>
+                        <button class="w-8 h-8 flex items-center justify-center text-gray-500">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                    <div class="playlist-item flex items-center py-3 px-4 hover:bg-gray-50">
+                        <div class="w-10 h-10 bg-gray-300 rounded mr-3 flex-shrink-0">
+                            <img src="https://picsum.photos/id/237/60" class="w-full h-full object-cover rounded" alt="封面">
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">孤独颂歌</div>
+                            <div class="text-sm text-gray-600">陈奕迅</div>
+                        </div>
+                        <div class="text-sm text-gray-500 mr-2">03:45</div>
+                        <button class="w-8 h-8 flex items-center justify-center text-gray-500">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                    <div class="playlist-item flex items-center py-3 px-4 hover:bg-gray-50">
+                        <div class="w-10 h-10 bg-gray-300 rounded mr-3 flex-shrink-0">
+                            <img src="https://picsum.photos/id/76/60" class="w-full h-full object-cover rounded" alt="封面">
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">如果当时</div>
+                            <div class="text-sm text-gray-600">许嵩</div>
+                        </div>
+                        <div class="text-sm text-gray-500 mr-2">04:33</div>
+                        <button class="w-8 h-8 flex items-center justify-center text-gray-500">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 控制按钮区域 -->
+    <div class="mt-8 flex justify-center space-x-4 md:space-x-8">
+        <button id="toggle-view-btn" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors">
+            切换视图模式
+        </button>
+        <button id="toggle-playlist-btn" class="bg-pink-500 hover:bg-pink-600 text-white py-2 px-4 rounded-lg transition-colors">
+            显示播放列表
+        </button>
+        <button id="toggle-play-btn" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors">
+            播放/暂停
+        </button>
+    </div>
+    
+    <!-- 交互说明 -->
+    <div class="mt-6 max-w-2xl mx-auto text-center text-gray-700 text-sm">
+        <p class="font-medium mb-2">原型交互说明：</p>
+        <ul class="list-disc text-left inline-block">
+            <li>点击"切换视图模式"按钮在封面视图和歌词视图间切换</li>
+            <li>点击"显示播放列表"按钮打开/关闭播放列表</li>
+            <li>点击"播放/暂停"按钮可控制专辑旋转动画</li>
+            <li>歌词区域支持滚动，当前高亮行为正在演唱的歌词</li>
+            <li>播放列表中当前播放项高亮显示</li>
+            <li>底部按钮为原型控制，实际应用中通过点击界面元素操作</li>
+        </ul>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // DOM元素
+        const coverView = document.getElementById('cover-view');
+        const lyricsView = document.getElementById('lyrics-view');
+        const playlist = document.getElementById('playlist');
+        const albumCover = document.querySelector('.album-rotating');
+        const toggleViewBtn = document.getElementById('toggle-view-btn');
+        const togglePlaylistBtn = document.getElementById('toggle-playlist-btn');
+        const togglePlayBtn = document.getElementById('toggle-play-btn');
+        const playPauseIcon = document.querySelector('.fa-pause');
+        
+        // 当前状态变量
+        let isShowingCover = true;
+        let isPlaylistVisible = false;
+        let isPlaying = true;
+        
+        // 视图切换功能
+        function toggleView() {
+            if (isShowingCover) {
+                // 切换到歌词视图
+                coverView.style.opacity = '0';
+                lyricsView.style.display = 'flex';
+                setTimeout(() => {
+                    coverView.style.display = 'none';
+                    lyricsView.style.opacity = '1';
+                }, 300);
+            } else {
+                // 切换到封面视图
+                lyricsView.style.opacity = '0';
+                coverView.style.display = 'flex';
+                setTimeout(() => {
+                    lyricsView.style.display = 'none';
+                    coverView.style.opacity = '1';
+                }, 300);
+            }
+            isShowingCover = !isShowingCover;
+        }
+        
+        // 播放列表显示/隐藏功能
+        function togglePlaylist() {
+            if (isPlaylistVisible) {
+                playlist.style.transform = 'translateY(100%)';
+            } else {
+                playlist.style.transform = 'translateY(0)';
+            }
+            isPlaylistVisible = !isPlaylistVisible;
+        }
+        
+        // 播放/暂停功能
+        function togglePlay() {
+            if (isPlaying) {
+                albumCover.classList.add('album-paused');
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+            } else {
+                albumCover.classList.remove('album-paused');
+                playPauseIcon.classList.remove('fa-play');
+                playPauseIcon.classList.add('fa-pause');
+            }
+            isPlaying = !isPlaying;
+        }
+        
+        // 绑定事件
+        toggleViewBtn.addEventListener('click', toggleView);
+        togglePlaylistBtn.addEventListener('click', togglePlaylist);
+        togglePlayBtn.addEventListener('click', togglePlay);
+        
+        // 专辑封面点击切换视图
+        coverView.addEventListener('click', toggleView);
+        
+        // 歌词区域点击返回封面
+        lyricsView.addEventListener('click', function(e) {
+            // 只有点击歌词区域的空白处才返回封面
+            if (e.target === lyricsView) {
+                toggleView();
+            }
+        });
+    </script>
+</body>
+</html>
